@@ -15,7 +15,6 @@ export default {
   },
   mounted() {
     let canvasContainer = document.querySelectorAll(".canvas-container")[0];
-    console.log(canvasContainer);
     let app = new OSDApp();
     canvasContainer.appendChild(app.canvas);
   }
