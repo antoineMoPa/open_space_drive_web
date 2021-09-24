@@ -3,3 +3,7 @@ node_modules
 dist
 dist-ssr
 *.local
+*.blend1
+
+# We will keep only yarn.lock
+package-lock.json

@@ -1,8 +1,6 @@
 import Vehicle from "./Vehicle.ts";
 
 export default class PlayerVehicle extends Vehicle {
-
-
     listenKeyboard() {
         this.watchedKeyCodes = { "KeyS": false,
                                  "ArrowDown": false,
@@ -11,10 +9,16 @@ export default class PlayerVehicle extends Vehicle {
                                  "KeyA": false,
                                  "ArrowLeft": false,
                                  "KeyD": false,
+                                 "Shift": false,
                                  "ArrowRight": false };
 
         this.scene.onKeyboardObservable.add((kbInfo) => {
             let code = kbInfo.event.code.toString();
+
+            if ('Shift' in this.watchedKeyCodes) {
+                this.watchedKeyCodes['Shift'] = kbInfo.event.shiftKey;
+            }
+
             if (!(code in this.watchedKeyCodes))
                 return;
 
@@ -23,15 +27,17 @@ export default class PlayerVehicle extends Vehicle {
             } else if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYUP) {
                 this.watchedKeyCodes[code] = false;
             }
-
         });
     }
 
     updateControl(deltaTime) {
-        const strength = 0.001 * deltaTime;
+        let strength = 0.001 * deltaTime;
         const backStrength = 0.001 * deltaTime;
         const rotateStrength = 0.00003 * deltaTime;
 
+        if (this.watchedKeyCodes.Shift) {
+            strength *= 10.0;
+        }
         if (this.watchedKeyCodes.KeyW) {
             this.velocity.z += strength;
         }
@@ -56,9 +62,5 @@ export default class PlayerVehicle extends Vehicle {
         if (this.watchedKeyCodes.ArrowDown) {
             this.angularVelocity.x += rotateStrength;
         }
-
-
-
     }
-
 }

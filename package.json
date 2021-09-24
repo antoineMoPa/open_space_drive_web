@@ -1,18 +1,24 @@
 {
-  "name": "open_space_drive_web",
-  "version": "0.0.0",
-  "license": "GPLv3",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build"
-  },
-  "dependencies": {
-    "babylonjs": "^4.2.0",
-    "babylonjs-loaders": "^4.2.0",
-    "vue": "^3.0.4"
-  },
-  "devDependencies": {
-    "vite": "^1.0.0-rc.13",
-    "@vue/compiler-sfc": "^3.0.4"
-  }
+    "name": "open_space_drive_web",
+    "version": "0.0.0",
+    "license": "GPLv3",
+    "scripts": {
+        "dev": "vite",
+        "lint": "eslint",
+        "build": "vite build"
+    },
+    "dependencies": {
+        "babylonjs": "^4.2.0",
+        "babylonjs-loaders": "^4.2.0",
+        "vue": "^3.0.4"
+    },
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^4.31.2",
+        "@typescript-eslint/parser": "^4.31.2",
+        "@vue/compiler-sfc": "^3.0.4",
+        "eslint": "^7.32.0",
+        "eslint-config-google": "^0.14.0",
+        "eslint-plugin-vue": "^7.18.0",
+        "vite": "^1.0.0-rc.13"
+    }
 }
