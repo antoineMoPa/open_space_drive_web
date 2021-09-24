@@ -105,6 +105,7 @@ export default class OSDApp {
             playerCar,
             this.scene
         );
+
         this.cameraGoal.parent = this.playerVehicle.model;
     }
 

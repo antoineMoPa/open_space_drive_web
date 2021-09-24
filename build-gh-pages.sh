@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Create branch if not exists to make sure deletion step works
 git checkout -b gh-pages
 git switch main
 
@@ -12,5 +13,7 @@ git branch -D gh-pages &&\
     git add -f dist/* &&\
     git mv -f dist/* . && \
     git commit -m "deploy";
+
+git push origin gh-pages --force
 
 git switch -f main;
