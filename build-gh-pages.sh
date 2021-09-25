@@ -6,7 +6,7 @@ git switch main
 
 git branch -D gh-pages &&\
     yarn install &&\
-    yarn run build && \
+    yarn run build --base=/open_space_drive_web/ && \
     git checkout --orphan gh-pages &&\
     touch .nojekyll &&\
     git add .nojekyll &&\
