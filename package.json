@@ -4,12 +4,16 @@
     "license": "GPLv3",
     "scripts": {
         "dev": "vite",
-        "lint": "eslint",
-        "build": "vite build"
+        "lint": "eslint . --ext .Vue --ext .ts",
+        "build": "vite build",
+        "tsc": "tsc",
+        "doc": "typedoc src/main.ts"
     },
     "dependencies": {
         "babylonjs": "^4.2.0",
         "babylonjs-loaders": "^4.2.0",
+        "typedoc": "^0.22.4",
+        "typescript": "^4.4.3",
         "vue": "^3.0.4"
     },
     "devDependencies": {

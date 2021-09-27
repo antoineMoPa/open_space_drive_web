@@ -1,26 +1,27 @@
-import Vehicle from "./Vehicle.ts";
+import Vehicle from './Vehicle';
 
 export default class PlayerVehicle extends Vehicle {
     listenKeyboard() {
-        this.watchedKeyCodes = { "KeyS": false,
-                                 "ArrowDown": false,
-                                 "KeyW": false,
-                                 "ArrowUp": false,
-                                 "KeyA": false,
-                                 "ArrowLeft": false,
-                                 "KeyD": false,
-                                 "Shift": false,
-                                 "ArrowRight": false };
+        this.watchedKeyCodes = {'KeyS': false,
+            'ArrowDown': false,
+            'KeyW': false,
+            'ArrowUp': false,
+            'KeyA': false,
+            'ArrowLeft': false,
+            'KeyD': false,
+            'Shift': false,
+            'ArrowRight': false};
 
         this.scene.onKeyboardObservable.add((kbInfo) => {
-            let code = kbInfo.event.code.toString();
+            const code = kbInfo.event.code.toString();
 
             if ('Shift' in this.watchedKeyCodes) {
                 this.watchedKeyCodes['Shift'] = kbInfo.event.shiftKey;
             }
 
-            if (!(code in this.watchedKeyCodes))
+            if (!(code in this.watchedKeyCodes)) {
                 return;
+            }
 
             if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYDOWN) {
                 this.watchedKeyCodes[code] = true;

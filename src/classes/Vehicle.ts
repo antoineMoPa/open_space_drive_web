@@ -4,11 +4,13 @@ export default class Vehicle {
     model;
     scene;
     watchedKeyCodes;
+    velocity;
+    angularVelocity;
 
-    constructor(model, scene){
+    constructor(model, scene) {
         this.model = model;
         this.scene = scene;
-        this.velocity = new BABYLON.Vector3(0.0,0.0,0.0);
+        this.velocity = new BABYLON.Vector3(0.0, 0.0, 0.0);
         this.angularVelocity = new BABYLON.Vector3();
 
         this.listenKeyboard();
@@ -17,17 +19,17 @@ export default class Vehicle {
 
     updatePhysics(deltaTime) {
         const t = deltaTime;
-        this.model.translate(this.velocity.multiplyByFloats(t,t,-t), 1,
-                             BABYLON.Space.MODEL);
+        this.model.translate(this.velocity.multiplyByFloats(t, t, -t), 1,
+            BABYLON.Space.LOCAL);
         this.model.rotate(BABYLON.Axis.X,
-                          this.angularVelocity.x * t,
-                          BABYLON.Space.MODEL);
+            this.angularVelocity.x * t,
+            BABYLON.Space.LOCAL);
         this.model.rotate(BABYLON.Axis.Y,
-                          this.angularVelocity.y * t,
-                          BABYLON.Space.MODEL);
+            this.angularVelocity.y * t,
+            BABYLON.Space.LOCAL);
         this.model.rotate(BABYLON.Axis.Z,
-                          this.angularVelocity.z * t,
-                          BABYLON.Space.MODEL);
+            this.angularVelocity.z * t,
+            BABYLON.Space.LOCAL);
     }
 
     updateDamping(deltaTime) {

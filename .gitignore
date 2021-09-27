@@ -4,6 +4,8 @@ dist
 dist-ssr
 *.local
 *.blend1
+js/*
+*.log
 
 # We will keep only yarn.lock
 package-lock.json
