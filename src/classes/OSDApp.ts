@@ -2,18 +2,21 @@ import * as BABYLON from 'babylonjs';
 import 'babylonjs-loaders';
 import Vehicle from './Vehicle';
 import PlayerVehicle from './PlayerVehicle';
-
+import DynamicWorld from './DynamicWorld';
+import FrameUpdater from './FrameUpdater';
 
 export default class OSDApp {
     canvas : HTMLCanvasElement;
-    engine;
-    scene;
+    engine : BABYLON.Engine;
+    scene: BABYLON.Scene;
     playerVehicle : Vehicle;
-    camera;
+    camera : BABYLON.UniversalCamera;
     cameraGoal: BABYLON.Mesh;
     cameraCurrent: BABYLON.Mesh;
+    dynamicWorld: DynamicWorld;
 
     constructor() {
+        window['_osdapp'] = this;
         this.canvas = document.createElement('canvas');
         this.engine = new BABYLON.Engine(this.canvas, true);
         this.createScene();
@@ -26,6 +29,8 @@ export default class OSDApp {
 
         window.addEventListener('resize', this.resize.bind(this));
         this.resize();
+        this.dynamicWorld = new DynamicWorld(this.scene);
+        this.dynamicWorld.load();
     }
 
     update() {
@@ -36,6 +41,7 @@ export default class OSDApp {
         }
 
         this.updateCamera(deltaTime);
+        FrameUpdater.update({ scene: this.scene });
     }
 
     resize() {
