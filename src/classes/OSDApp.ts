@@ -63,28 +63,15 @@ export default class OSDApp {
         }
 
         const targetPosition = this.cameraGoal.getAbsolutePosition();
-        const targetRotation = this.cameraGoal.absoluteRotationQuaternion;
         const currentPosition = this.cameraCurrent.getAbsolutePosition();
+        const targetRotation = this.cameraGoal.absoluteRotationQuaternion;
         const currentRotation = this.cameraCurrent.absoluteRotationQuaternion;
 
         const factor = 1.0 - Math.min(Math.max(deltaTime * 0.005, 0.0), 1.0);
 
         this.cameraCurrent.position =
             targetPosition.scale(1.0 - factor).add(currentPosition.scale(factor));
-        this.cameraCurrent.rotationQuaternion =
-            targetRotation.scale(1.0 - factor).add(currentRotation.scale(factor));
-
-
-        // const vehicleForward = this.playerVehicle.model.forward;
-
-        // const cameraRelativeOffset = new BABYLON.Vector3(-20, -20, -20);
-        // const cameraOffset = vehicleForward.normalize().multiply(cameraRelativeOffset);
-        // this.cameraGoal.position = new BABYLON.Vector3(0, 2, 14);
-        // this.cameraGoal.rotation = new BABYLON.Vector3(0, Math.PI, 0);
-        //
-        // this.camera.position = this.cameraGoal.getAbsolutePosition();
-        // this.camera.rotate(this.cameraGoal.absoluteRotationQuaternion);
-        // this.camera.cameraDirection.set(vehiclePosition);
+        this.cameraCurrent.rotationQuaternion = targetRotation;
     }
 
 
