@@ -33,7 +33,7 @@ export default class DynamicWorld {
         setTimeout(() => {
             this.visibleObjects.forEach(async ({ objectName, x, y, z }) => {
                 const babylonPackedObjectReader = new BabylonPackedObjectReader(
-                    this.scene, `/objects/${objectName}`
+                    this.scene, `${document.baseURI}objects/${objectName}`
                 );
                 const obj = await babylonPackedObjectReader.load();
                 obj.name = objectName + Math.random();
