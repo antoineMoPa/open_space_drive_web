@@ -26,14 +26,26 @@ export default class PackedObject {
     }
 
     async load() {
-        const vertexFetchPromise = URLFetchStringCache.getUrl(this.#path + '/vertex.glsl');
-        const fragmentFetchPromise = URLFetchStringCache.getUrl(this.#path + '/fragment.glsl');
-        const result = await Promise.all([vertexFetchPromise, fragmentFetchPromise]);
+        const manifestText = await URLFetchStringCache.getUrl(this.#path + '/manifest.json');
+        const manifest = JSON.parse(manifestText);
 
-        const vertexShader = await result[0];
-        const fragmentShader = await result[1];
+        let vertexShader = null;
+        let fragmentShader = null;
 
-        return {vertexShader, fragmentShader};
+        if (manifest.hasCustomShader) {
+            const vertexFetchPromise = URLFetchStringCache.getUrl(this.#path + '/vertex.glsl');
+            const fragmentFetchPromise = URLFetchStringCache.getUrl(this.#path + '/fragment.glsl');
+            const result = await Promise.all([vertexFetchPromise, fragmentFetchPromise]);
+
+            vertexShader = await result[0];
+            fragmentShader = await result[1];
+        }
+
+        return {
+            manifest,
+            vertexShader,
+            fragmentShader
+        };
     }
 
     export() {

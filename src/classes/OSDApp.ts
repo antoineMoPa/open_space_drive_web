@@ -56,6 +56,7 @@ export default class OSDApp {
         this.camera = new BABYLON.UniversalCamera('camera', new BABYLON.Vector3(0, 0, 0), this.scene);
 
         this.cameraGoal.position.z += 20;
+        this.cameraGoal.position.y += 3;
         this.cameraGoal.rotation.x -= Math.PI;
 
         this.camera.parent = this.cameraCurrent;
@@ -84,8 +85,6 @@ export default class OSDApp {
     createScene() {
         const scene = new BABYLON.Scene(this.engine);
         this.scene = scene;
-        BABYLON.MeshBuilder.CreateBox('box', {});
-
         new BABYLON.HemisphericLight('light', new BABYLON.Vector3(1, 1, 0), this.scene);
 
         this.scene._inputManager._onCanvasFocusObserver.callback();

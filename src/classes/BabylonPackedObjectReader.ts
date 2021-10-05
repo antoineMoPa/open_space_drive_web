@@ -26,11 +26,57 @@ export default class BabylonPackedObjectReader {
         const scene = this.scene;
 
         const packedObject = new PackedObject(path);
-        const {vertexShader, fragmentShader} = await packedObject.load();
+        const {manifest, vertexShader, fragmentShader} = await packedObject.load();
+
+        let material = null;
+        if (manifest.hasCustomShader) {
+            material = this.loadCustomShader({vertexShader, fragmentShader, scene, name, path});
+        }
+
+        return new Promise((resolve, reject) => {
+            const AssetsManager = new BABYLON.AssetsManager();
+            const task = AssetsManager.addMeshTask(
+                'add-'+name,
+                name,
+                path + '/',
+                'model.glb',
+            );
+
+            task.onSuccess = () => {
+                const model = scene.getMeshByName(name);
+                if (manifest.hasCustomShader) {
+                    model.material = material;
+                }
+                model.position.z = 200;
+                resolve(model);
+
+                if (manifest.hasCustomShader) {
+                    this.frameUpdaterCallbackID = FrameUpdater.addUpdater(({ scene }) => {
+                        const cameraPosition = scene.cameras[0].globalPosition;
+                        material.setVector3(
+                            'cameraPosition',
+                            cameraPosition.subtract(model.getAbsolutePosition())
+                        );
+                    });
+                }
+            };
+
+            task.onErrorCallback = (task, message) => {
+                reject();
+            };
+
+            task.run();
+        });
+
+    }
+
+    loadCustomShader({
+        vertexShader, fragmentShader, scene, name, path
+    }): BABYLON.ShaderMaterial{
         BABYLON.Effect.ShadersStore[name + 'VertexShader'] = vertexShader;
         BABYLON.Effect.ShadersStore[name + 'FragmentShader'] = fragmentShader;
 
-        const shaderMaterial = new BABYLON.ShaderMaterial(
+        return new BABYLON.ShaderMaterial(
             name + 'shader',
             scene,
             {
@@ -45,35 +91,5 @@ export default class BabylonPackedObjectReader {
                 ],
             },
         );
-
-        return new Promise((resolve, reject) => {
-            const AssetsManager = new BABYLON.AssetsManager();
-            const task = AssetsManager.addMeshTask(
-                'add-'+name,
-                name,
-                path + '/',
-                'model.glb',
-            );
-
-            task.onSuccess = () => {
-                const model = scene.getMeshByName(name);
-                model.material = shaderMaterial;
-                model.position.z = 200;
-                resolve(model);
-                this.frameUpdaterCallbackID = FrameUpdater.addUpdater(({ scene }) => {
-                    const cameraPosition = scene.cameras[0].globalPosition;
-                    shaderMaterial.setVector3(
-                        'cameraPosition',
-                        cameraPosition.subtract(model.getAbsolutePosition())
-                    );
-                });
-            };
-
-            task.onErrorCallback = (task, message) => {
-                reject();
-            };
-
-            task.run();
-        });
     }
 }

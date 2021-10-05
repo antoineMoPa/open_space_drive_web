@@ -34,10 +34,10 @@ export default class PlayerVehicle extends Vehicle {
     updateControl(deltaTime) {
         let strength = 0.001 * deltaTime;
         const backStrength = 0.001 * deltaTime;
-        const rotateStrength = 0.00003 * deltaTime;
+        const rotateStrength = 0.000016 * deltaTime;
 
         if (this.watchedKeyCodes.Shift) {
-            strength *= 10.0;
+            strength *= 3.0;
         }
         if (this.watchedKeyCodes.KeyW) {
             this.velocity.z += strength;

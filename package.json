@@ -7,7 +7,8 @@
         "lint": "eslint . --ext .Vue --ext .ts",
         "build": "vite build",
         "tsc": "tsc",
-        "doc": "typedoc src/main.ts"
+        "doc": "typedoc src/main.ts",
+        "assets:build": "node scripts/buildAssets.js"
     },
     "dependencies": {
         "babylonjs": "^4.2.0",
