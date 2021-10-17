@@ -1,4 +1,5 @@
 import * as BABYLON from 'babylonjs';
+import makeCollisions from './CollisionObject';
 
 export default class Vehicle {
     model;
@@ -6,6 +7,7 @@ export default class Vehicle {
     watchedKeyCodes;
     velocity;
     angularVelocity;
+    collisionObject;
 
     constructor(model, scene) {
         this.model = model;
@@ -14,8 +16,14 @@ export default class Vehicle {
         this.angularVelocity = new BABYLON.Vector3();
 
         this.listenKeyboard();
+
+        makeCollisions(this);
     }
 
+    dispose() {
+        this.collisionObject.dispose();
+        this.model.dispose();
+    }
 
     updatePhysics(deltaTime) {
         const t = deltaTime;

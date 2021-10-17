@@ -8,9 +8,11 @@ fs.readdir('./public/objects', function (_, files) {
 
         const objectFiles = await fs.readdirSync('./public/objects/' + folder);
         const hasCustomShader = objectFiles.indexOf('vertex.glsl') > -1 && objectFiles.indexOf('fragment.glsl') > -1;
+        const hasCollisions = objectFiles.indexOf('.collide') > -1;
 
         const objectManifest = {
             hasCustomShader,
+            hasCollisions
         };
 
         const objectManifestText = JSON.stringify(objectManifest);

@@ -25,6 +25,7 @@ export default class OSDApp {
         this.engine.runRenderLoop(() => {
             this.update();
             this.scene.render();
+            FrameUpdater.postFrameUpdate({ scene: this.scene });
         });
 
         window.addEventListener('resize', this.resize.bind(this));
@@ -75,7 +76,7 @@ export default class OSDApp {
         const currentRotation = this.cameraCurrent.absoluteRotationQuaternion;
 
         const factor = 1.0 - Math.min(Math.max(deltaTime * 0.005, 0.0), 1.0);
-        const rotationFactor = 0.1 * factor;
+        const rotationFactor = 0.06 * factor;
         this.cameraCurrent.position =
             targetPosition.scale(1.0 - factor).add(currentPosition.scale(factor));
         this.cameraCurrent.rotationQuaternion = BABYLON.Quaternion.Slerp(this.cameraCurrent.absoluteRotationQuaternion, targetRotation, rotationFactor);
@@ -94,6 +95,7 @@ export default class OSDApp {
 
     onSceneLoaded() {
         const playerCar = this.scene.getNodeByName('player_car');
+
         this.playerVehicle = new PlayerVehicle(
             playerCar,
             this.scene,

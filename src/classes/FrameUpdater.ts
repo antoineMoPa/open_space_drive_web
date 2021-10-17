@@ -11,6 +11,7 @@
  */
 export default class FrameUpdater {
     private static callbacks: {} = {};
+    private static postFrameCallbacks: {} = {};
     private static counter: number = 0;
 
     /**
@@ -18,20 +19,37 @@ export default class FrameUpdater {
      * @param callback a new function to execute at every frame.
      * @return the id of the callback, useful for deletion
      */
-    static addUpdater(callback): string {
-        let id = 'callback_' + FrameUpdater.counter;
-        FrameUpdater.callbacks[id] = callback;
-        FrameUpdater.counter++;
-        return id;
+    static addUpdater(callback, runAfterFrame:boolean=false): string {
+        if (runAfterFrame) {
+            let id = 'postCallback_' + FrameUpdater.counter;
+            FrameUpdater.postFrameCallbacks[id] = callback;
+            FrameUpdater.counter++;
+            return id;
+        } else {
+            let id = 'callback_' + FrameUpdater.counter;
+            FrameUpdater.callbacks[id] = callback;
+            FrameUpdater.counter++;
+            return id;
+        }
     }
 
     static removeUpdater(id: string) {
-        delete FrameUpdater.callbacks[id];
+        if (id.split('_')[0] == 'postCallback') {
+            delete FrameUpdater.postFrameCallbacks[id];
+        } else {
+            delete FrameUpdater.callbacks[id];
+        }
     }
 
     static update({ scene }) {
         for (const callback in FrameUpdater.callbacks) {
             FrameUpdater.callbacks[callback]({ scene });
+        }
+    }
+
+    static postFrameUpdate({ scene }) {
+        for (const callback in FrameUpdater.postFrameCallbacks) {
+            FrameUpdater.postFrameCallbacks[callback]({ scene });
         }
     }
 }

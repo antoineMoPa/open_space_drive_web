@@ -1,11 +1,13 @@
 import * as BABYLON from 'babylonjs';
 import PackedObject from './PackedObject';
 import FrameUpdater from './FrameUpdater.ts';
+import makeCollisions from './CollisionObject.ts';
+import DynamicObject from './DynamicObject.ts';
 
 export default class BabylonPackedObjectReader {
-    scene;
-    path;
-    name;
+    scene: BABYLON.Scene;
+    path: string;
+    name: string;
     frameUpdaterCallbackID: string = null;
 
     constructor(scene, path) {
@@ -21,9 +23,9 @@ export default class BabylonPackedObjectReader {
     }
 
     async load(): BABYLON.Mesh {
-        const name = this.name;
-        const path = this.path;
-        const scene = this.scene;
+        const name:string = this.name;
+        const path:string = this.path;
+        const scene:string = this.scene;
 
         const packedObject = new PackedObject(path);
         const {manifest, vertexShader, fragmentShader} = await packedObject.load();
@@ -44,6 +46,12 @@ export default class BabylonPackedObjectReader {
 
             task.onSuccess = () => {
                 const model = scene.getMeshByName(name);
+                const dynamicObject = new DynamicObject(model);
+
+                if (manifest.hasCollisions) {
+                    makeCollisions(dynamicObject, { staticObject: true });
+                }
+
                 if (manifest.hasCustomShader) {
                     model.material = material;
                 }

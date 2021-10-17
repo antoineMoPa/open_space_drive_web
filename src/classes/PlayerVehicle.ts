@@ -31,9 +31,13 @@ export default class PlayerVehicle extends Vehicle {
         });
     }
 
+    dispose() {
+        super.dispose();
+    }
+
     updateControl(deltaTime) {
         let strength = 0.001 * deltaTime;
-        const backStrength = 0.001 * deltaTime;
+        const backStrength = 0.0003 * deltaTime;
         const rotateStrength = 0.000016 * deltaTime;
 
         if (this.watchedKeyCodes.Shift) {
