@@ -125,7 +125,6 @@ export class CollisionObject {
         });
 
         if (this.currentCollidingObjectIndices.length === 0) {
-            console.log('setting');
             this.positionBeforeCollision = this.classInstance.model.position.clone();
         }
     }
