@@ -26,7 +26,10 @@ export class CollisionObject {
     private cachedBounds: BABYLON.BoundingInfo|null = null;
     private _isStaticObject: boolean = false;
     private currentCollidingObjectIndices: number[] = [];
-    private positionBeforeCollision: BABYLON.Vector3;
+    private positionBeforeCollision: BABYLON.Vector3 = new BABYLON.Vector3();
+    private velocityBeforeCollision: BABYLON.Vector3 = new BABYLON.Vector3();
+    private angularVelocityBeforeCollision: BABYLON.Vector3 = new BABYLON.Vector3();
+    private quaternionBeforeCollision: BABYLON.Quaternion = new BABYLON.Quaternion();
 
     constructor(_classInstance, options={}) {
         this.classInstance = _classInstance;
@@ -111,13 +114,12 @@ export class CollisionObject {
             const otherIndexInArray = this.currentCollidingObjectIndices.indexOf(index);
 
             if (boundingInfo.intersects(otherBoundingInfo)) {
-                // Flip the object to the other direction
-                // TODO Make this work
-                this.classInstance.velocity.scaleInPlace(0.8);
+
+                this.classInstance.velocity.scaleInPlace(0.1);
                 if(otherIndexInArray === -1) {
+                    this.restorePreCollisionState()
                     this.currentCollidingObjectIndices.push(index);
                     this.classInstance.model.rotationQuaternion.conjugateInPlace();
-                    this.classInstance.velocity.negateInPlace();
                 }
             } else if (otherIndexInArray != -1){
                 this.currentCollidingObjectIndices.splice(otherIndexInArray, 1);
@@ -125,8 +127,22 @@ export class CollisionObject {
         });
 
         if (this.currentCollidingObjectIndices.length === 0) {
-            this.positionBeforeCollision = this.classInstance.model.position.clone();
+            this.savePreCollisionState();
         }
+    }
+
+    savePreCollisionState() {
+        this.positionBeforeCollision.copyFrom(this.classInstance.model.position);
+        this.angularVelocityBeforeCollision.copyFrom(this.classInstance.angularVelocity);
+        this.velocityBeforeCollision.copyFrom(this.classInstance.velocity);
+        this.quaternionBeforeCollision.copyFrom(this.classInstance.model.absoluteRotationQuaternion);
+    }
+
+    restorePreCollisionState() {
+        this.classInstance.model.position = this.positionBeforeCollision.clone();
+        this.classInstance.velocity = this.velocityBeforeCollision.clone();
+        this.classInstance.model.rotationQuaternion = this.quaternionBeforeCollision.clone();
+        this.classInstance.angularVelocity = this.angularVelocityBeforeCollision.clone();
     }
 
     postFrameUpdate() {
