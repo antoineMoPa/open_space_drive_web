@@ -39,33 +39,45 @@ export default class PlayerVehicle extends Vehicle {
         let strength = 0.001 * deltaTime;
         const backStrength = 0.0003 * deltaTime;
         const rotateStrength = 0.000016 * deltaTime;
+        const rotationMatrix = new BABYLON.Matrix();
+        this.model.absoluteRotationQuaternion.toRotationMatrix(rotationMatrix);
+
+        const localToGlobal = (vector) => {
+            return BABYLON.Vector3.TransformCoordinates(vector, rotationMatrix);
+        };
+
+        const localVelocityOffset = new BABYLON.Vector3(0,0,0);
+        const localAngularVelocityOffset = new BABYLON.Vector3(0,0,0);
 
         if (this.watchedKeyCodes.Shift) {
             strength *= 3.0;
         }
         if (this.watchedKeyCodes.KeyW) {
-            this.velocity.z += strength;
+            localVelocityOffset.z -= strength;
         }
         if (this.watchedKeyCodes.KeyS) {
-            this.velocity.z -= backStrength;
+            localVelocityOffset.z += backStrength;
         }
         if (this.watchedKeyCodes.ArrowLeft) {
-            this.angularVelocity.y += rotateStrength;
+            localAngularVelocityOffset.y -= rotateStrength;
         }
         if (this.watchedKeyCodes.ArrowRight) {
-            this.angularVelocity.y -= rotateStrength;
+            localAngularVelocityOffset.y += rotateStrength;
         }
         if (this.watchedKeyCodes.KeyA) {
-            this.angularVelocity.z += rotateStrength;
+            localAngularVelocityOffset.z += rotateStrength;
         }
         if (this.watchedKeyCodes.KeyD) {
-            this.angularVelocity.z -= rotateStrength;
+            localAngularVelocityOffset.z -= rotateStrength;
         }
         if (this.watchedKeyCodes.ArrowUp) {
-            this.angularVelocity.x -= rotateStrength;
+            localAngularVelocityOffset.x -= rotateStrength;
         }
         if (this.watchedKeyCodes.ArrowDown) {
-            this.angularVelocity.x += rotateStrength;
+            localAngularVelocityOffset.x += rotateStrength;
         }
+
+        this.velocity.addInPlace(localToGlobal(localVelocityOffset));
+        this.angularVelocity.addInPlace(localToGlobal(localAngularVelocityOffset));
     }
 }
