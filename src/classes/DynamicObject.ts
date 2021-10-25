@@ -2,9 +2,19 @@ import * as BABYLON from 'babylonjs';
 
 export default class DynamicObject {
     velocity:BABYLON.Vector3 = new BABYLON.Vector3(0.0, 0.0, 0.0);
-    model = null;
+    _model = null;
+    _manifest = null;
 
-    constructor(model) {
-        this.model = model;
+    constructor(model, manifest) {
+        this._model = model;
+        this._manifest = manifest;
+    }
+
+    get model() {
+        return this._model;
+    }
+
+    get manifest() {
+        return this._manifest;
     }
 }

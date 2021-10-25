@@ -4,12 +4,15 @@ import Vehicle from './Vehicle';
 import PlayerVehicle from './PlayerVehicle';
 import DynamicWorld from './DynamicWorld';
 import FrameUpdater from './FrameUpdater';
+import * as CANNON from 'cannon';
+
+window.CANNON = CANNON;
 
 export default class OSDApp {
     canvas : HTMLCanvasElement;
     engine : BABYLON.Engine;
     scene: BABYLON.Scene;
-    playerVehicle : Vehicle;
+    _playerVehicle : Vehicle;
     camera : BABYLON.UniversalCamera;
     cameraGoal: BABYLON.Mesh;
     cameraCurrent: BABYLON.Mesh;
@@ -31,14 +34,14 @@ export default class OSDApp {
         window.addEventListener('resize', this.resize.bind(this));
         this.resize();
         this.dynamicWorld = new DynamicWorld(this.scene);
-        this.dynamicWorld.load();
+        this.dynamicWorld.load(this);
     }
 
     update() {
         const deltaTime = this.engine.getDeltaTime();
 
-        if (this.playerVehicle != null) {
-            this.playerVehicle.update(deltaTime);
+        if (this._playerVehicle != null) {
+            this._playerVehicle.update(deltaTime);
         }
 
         this.updateCamera(deltaTime);
@@ -56,9 +59,9 @@ export default class OSDApp {
         this.cameraCurrent = new BABYLON.Mesh('cameraCurrent', this.scene);
         this.camera = new BABYLON.UniversalCamera('camera', new BABYLON.Vector3(0, 0, 0), this.scene);
 
-        this.cameraGoal.position.z += 20;
-        this.cameraGoal.position.y += 3;
-        this.cameraGoal.rotation.x -= Math.PI;
+        this.cameraGoal.position.z += 10;
+        this.cameraGoal.position.y += 2;
+        this.cameraGoal.rotation.y -= Math.PI;
 
         this.camera.parent = this.cameraCurrent;
 
@@ -66,7 +69,7 @@ export default class OSDApp {
     }
 
     updateCamera(deltaTime) {
-        if (this.playerVehicle == null) {
+        if (this._playerVehicle == null) {
             return;
         }
 
@@ -90,24 +93,20 @@ export default class OSDApp {
 
         this.scene._inputManager._onCanvasFocusObserver.callback();
         this.canvas.focus();
-        this.createModels();
+        this.createPhysics();
     };
 
-    onSceneLoaded() {
-        const playerCar = this.scene.getNodeByName('player_car');
-
-        this.playerVehicle = new PlayerVehicle(
-            playerCar,
-            this.scene,
-        );
-
-        this.cameraGoal.parent = this.playerVehicle.model;
+    async createPhysics() {
+        var gravityVector = new BABYLON.Vector3(0, 0, 0);
+        var physicsPlugin = new BABYLON.CannonJSPlugin();
+        this.scene.enablePhysics(gravityVector, physicsPlugin);
     }
 
-    createModels() {
-        BABYLON.SceneLoader.Append(
-            './models/', 'scene.glb', this.scene,
-            this.onSceneLoaded.bind(this),
+    set playerVehicle(_playerVehicle) {
+        this._playerVehicle = new PlayerVehicle(
+            _playerVehicle.model,
+            this.scene,
         );
+        this.cameraGoal.parent = _playerVehicle.model;
     }
 }

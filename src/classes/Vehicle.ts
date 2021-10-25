@@ -1,5 +1,4 @@
 import * as BABYLON from 'babylonjs';
-import makeCollisions from './CollisionObject';
 
 export default class Vehicle {
     model;
@@ -7,7 +6,6 @@ export default class Vehicle {
     watchedKeyCodes;
     velocity;
     angularVelocity;
-    collisionObject;
 
     constructor(model, scene) {
         this.model = model;
@@ -16,19 +14,14 @@ export default class Vehicle {
         this.angularVelocity = new BABYLON.Vector3();
 
         this.listenKeyboard();
-
-        makeCollisions(this);
     }
 
     dispose() {
-        this.collisionObject.dispose();
         this.model.dispose();
     }
 
     updatePhysics(deltaTime) {
         const t = deltaTime;
-        // no idea why the -1 is required here...
-        this.model.position.addInPlace(this.velocity.scale(t).multiplyByFloats(-1,1,1));
 
         this.model.rotate(BABYLON.Axis.X,
             this.angularVelocity.x * t,
@@ -42,11 +35,13 @@ export default class Vehicle {
     }
 
     updateDamping(deltaTime) {
-        const dampPerSecond = 0.008;
+        const dampPerSecond = 0.001;
         const dampingFactor = (1.0 - dampPerSecond * deltaTime);
 
-        this.velocity = this.velocity.scale(dampingFactor);
-        this.angularVelocity = this.angularVelocity.scale(dampingFactor);
+        const velocity = this.model.physicsImpostor.getLinearVelocity();
+        const angularVelocity = this.model.physicsImpostor.getAngularVelocity();
+        this.model.physicsImpostor.setLinearVelocity(velocity.scale(dampingFactor));
+        this.model.physicsImpostor.setAngularVelocity(angularVelocity.scale(dampingFactor));
     }
 
     listenKeyboard() { }

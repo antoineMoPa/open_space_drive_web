@@ -1,6 +1,11 @@
 import Vehicle from './Vehicle';
 
 export default class PlayerVehicle extends Vehicle {
+
+    constructor(model, scene) {
+        super(model, scene);
+    }
+
     listenKeyboard() {
         this.watchedKeyCodes = {'KeyS': false,
             'ArrowDown': false,
@@ -36,9 +41,9 @@ export default class PlayerVehicle extends Vehicle {
     }
 
     updateControl(deltaTime) {
-        let strength = 0.001 * deltaTime;
-        const backStrength = 0.0003 * deltaTime;
-        const rotateStrength = 0.000016 * deltaTime;
+        let strength = 0.2 * deltaTime;
+        const backStrength = 0.3 * strength;
+        const rotateStrength = 0.001 * deltaTime;
         const rotationMatrix = new BABYLON.Matrix();
         this.model.absoluteRotationQuaternion.toRotationMatrix(rotationMatrix);
 
@@ -46,6 +51,8 @@ export default class PlayerVehicle extends Vehicle {
             return BABYLON.Vector3.TransformCoordinates(vector, rotationMatrix);
         };
 
+        const velocity = this.model.physicsImpostor.getLinearVelocity();
+        const angularVelocity = this.model.physicsImpostor.getAngularVelocity();
         const localVelocityOffset = new BABYLON.Vector3(0,0,0);
         const localAngularVelocityOffset = new BABYLON.Vector3(0,0,0);
 
@@ -65,10 +72,10 @@ export default class PlayerVehicle extends Vehicle {
             localAngularVelocityOffset.y += rotateStrength;
         }
         if (this.watchedKeyCodes.KeyA) {
-            localAngularVelocityOffset.z += rotateStrength;
+            localAngularVelocityOffset.z -= rotateStrength;
         }
         if (this.watchedKeyCodes.KeyD) {
-            localAngularVelocityOffset.z -= rotateStrength;
+            localAngularVelocityOffset.z += rotateStrength;
         }
         if (this.watchedKeyCodes.ArrowUp) {
             localAngularVelocityOffset.x -= rotateStrength;
@@ -77,7 +84,9 @@ export default class PlayerVehicle extends Vehicle {
             localAngularVelocityOffset.x += rotateStrength;
         }
 
-        this.velocity.addInPlace(localToGlobal(localVelocityOffset));
-        this.angularVelocity.addInPlace(localToGlobal(localAngularVelocityOffset));
+        this.model.physicsImpostor.setLinearVelocity(
+            velocity.add(localToGlobal(localVelocityOffset)));
+        this.model.physicsImpostor.setAngularVelocity(
+            angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
     }
 }

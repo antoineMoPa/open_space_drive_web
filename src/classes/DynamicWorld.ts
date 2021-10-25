@@ -1,4 +1,6 @@
 import BabylonPackedObjectReader from './BabylonPackedObjectReader';
+import OSDApp from './OSDApp';
+import makeCollisions from './CollisionObject.ts';
 
 export default class DynamicWorld {
     scene: BABYLON.Scene;
@@ -6,9 +8,19 @@ export default class DynamicWorld {
 
     constructor(scene) {
         this.scene = scene;
+        this.buildVehicles();
         this.buildTempBuildings();
         this.buildGround();
         this.buildWorldSphere();
+    }
+
+    buildVehicles(app) {
+        this.visibleObjects.push({
+            objectName: 'player_car_0001',
+            x: 0,
+            y: 10,
+            z: 0
+        });
     }
 
     buildTempBuildings() {
@@ -62,23 +74,40 @@ export default class DynamicWorld {
         });
     }
 
-    async load() {
+    async load(osdApp: OSDApp) {
         setTimeout(() => {
             this.visibleObjects.forEach(async (parameters) => {
                 const { objectName, x, y, z } = parameters;
                 const babylonPackedObjectReader = new BabylonPackedObjectReader(
                     this.scene, `${document.baseURI}objects/${objectName}`
                 );
-                const obj = await babylonPackedObjectReader.load();
-                obj.name = objectName + Math.random();
+                const dynamicObject = await babylonPackedObjectReader.load();
+                const model = dynamicObject.model;
+                const manifest = dynamicObject.manifest;
+                model.name = objectName + Math.random();
 
-                obj.position.x = x;
-                obj.position.y = y;
-                obj.position.z = z;
+                if (model.parent) {
+                    model.parent = null;
+                }
+
+                if (manifest.hasCollisions) {
+                    try {
+                        makeCollisions(dynamicObject, this.scene);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+
+                if (manifest.isPlayerVehicle && manifest.isDefaultPlayerVehicle) {
+                    osdApp.playerVehicle = dynamicObject;
+                }
+
+                model.position.x += x;
+                model.position.y += y;
+                model.position.z += z;
 
                 if (parameters.rotateY) {
-                    obj.rotationQuaternion = null;
-                    obj.rotation.y = parameters.rotateY;
+                    model.rotation.y = parameters.rotateY;
                 }
 
             },  30000 * Math.random());
