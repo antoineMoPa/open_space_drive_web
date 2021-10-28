@@ -59,8 +59,8 @@ export default class OSDApp {
         this.cameraCurrent = new BABYLON.Mesh('cameraCurrent', this.scene);
         this.camera = new BABYLON.UniversalCamera('camera', new BABYLON.Vector3(0, 0, 0), this.scene);
 
-        this.cameraGoal.position.z += 10;
-        this.cameraGoal.position.y += 2;
+        this.cameraGoal.position.z += 30;
+        this.cameraGoal.position.y += 10;
         this.cameraGoal.rotation.y -= Math.PI;
 
         this.camera.parent = this.cameraCurrent;

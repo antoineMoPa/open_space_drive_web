@@ -6,6 +6,7 @@ export default class Vehicle {
     watchedKeyCodes;
     velocity;
     angularVelocity;
+    trailer: null;
 
     constructor(model, scene) {
         this.model = model;
@@ -35,13 +36,21 @@ export default class Vehicle {
     }
 
     updateDamping(deltaTime) {
-        const dampPerSecond = 0.001;
-        const dampingFactor = (1.0 - dampPerSecond * deltaTime);
 
-        const velocity = this.model.physicsImpostor.getLinearVelocity();
-        const angularVelocity = this.model.physicsImpostor.getAngularVelocity();
-        this.model.physicsImpostor.setLinearVelocity(velocity.scale(dampingFactor));
-        this.model.physicsImpostor.setAngularVelocity(angularVelocity.scale(dampingFactor));
+        const dampModel = (model, dampPerSecond, angularDampPerSecond) => {
+            const dampingFactor = (1.0 - dampPerSecond * deltaTime);
+            const angularDampingFactor = (1.0 - angularDampPerSecond * deltaTime);
+            const velocity = model.physicsImpostor.getLinearVelocity();
+            const angularVelocity = model.physicsImpostor.getAngularVelocity();
+            model.physicsImpostor.setLinearVelocity(velocity.scale(dampingFactor));
+            model.physicsImpostor.setAngularVelocity(angularVelocity.scale(angularDampingFactor));
+        };
+
+        dampModel(this.model, 0.001, 0.001);
+
+        if (this.trailer) {
+            dampModel(this.trailer.model, 0.001, 0.02);
+        }
     }
 
     listenKeyboard() { }

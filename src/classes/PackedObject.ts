@@ -29,6 +29,10 @@ export default class PackedObject {
         const manifestText = await URLFetchStringCache.getUrl(this.#path + '/manifest.json');
         const manifest = JSON.parse(manifestText);
 
+        if (!manifest) {
+            console.error('Invalid manifest');
+        }
+
         let vertexShader = null;
         let fragmentShader = null;
 

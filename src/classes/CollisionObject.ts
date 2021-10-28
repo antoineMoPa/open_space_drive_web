@@ -35,25 +35,10 @@ export class CollisionObject {
             model,
             BABYLON.PhysicsImpostor.BoxImpostor,
             {
-                mass: children.length == 0 ? mass: 1,
+                mass: mass,
                 restitution,
             },
             this.scene
         );
-
-        const massPerPart = mass / children.length;
-        if (children.length > 0) {
-            children.forEach(child => {
-                child.physicsImpostor = new BABYLON.PhysicsImpostor(
-                    child,
-                    BABYLON.PhysicsImpostor.BoxImpostor,
-                    {
-                        mass,
-                        restitution,
-                    },
-                    this.scene
-                );
-            });
-        }
     }
 }

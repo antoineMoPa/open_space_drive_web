@@ -4,10 +4,12 @@ import makeCollisions from './CollisionObject.ts';
 
 export default class DynamicWorld {
     scene: BABYLON.Scene;
-    visibleObjects: [] = [];
+    initialObjectData: [] = [];
+    allDynamicObjects:[] = [];
 
     constructor(scene) {
         this.scene = scene;
+        this.scene.dynamicWorld = this;
         this.buildVehicles();
         this.buildTempBuildings();
         this.buildGround();
@@ -15,11 +17,17 @@ export default class DynamicWorld {
     }
 
     buildVehicles(app) {
-        this.visibleObjects.push({
-            objectName: 'player_car_0001',
+        this.initialObjectData.push({
+            objectName: 'trailer_0001',
             x: 0,
             y: 10,
-            z: 0
+            z: 40
+        });
+        this.initialObjectData.push({
+            objectName: 'truck_0001',
+            x: 0,
+            y: 0,
+            z: 20
         });
     }
 
@@ -33,7 +41,7 @@ export default class DynamicWorld {
 
         for (let i = 0; i < 6; i++) {
             for (let j = 0; j < 6; j++) {
-                this.visibleObjects.push({
+                this.initialObjectData.push({
                     objectName: 'building_000000000000000' + ((i ^ j + 2) % 4 + 1),
                     x: i * 300 - 500,
                     y: 0,
@@ -44,7 +52,7 @@ export default class DynamicWorld {
     }
 
     buildGround() {
-        this.visibleObjects.push({
+        this.initialObjectData.push({
             objectName: 'ground_0001',
             x: -200,
             y: 0,
@@ -54,7 +62,7 @@ export default class DynamicWorld {
 
         for (let i = 0; i < 20; i++) {
             for (let j = 0; j < 20; j++) {
-                this.visibleObjects.push({
+                this.initialObjectData.push({
                     objectName: 'palm_tree_0001',
                     x: (Math.random() - 0.5) * 2000,
                     y: 0,
@@ -66,7 +74,7 @@ export default class DynamicWorld {
     }
 
     buildWorldSphere() {
-        this.visibleObjects.push({
+        this.initialObjectData.push({
             objectName: 'world_sphere_0001',
             x: 0,
             y: 0,
@@ -76,7 +84,7 @@ export default class DynamicWorld {
 
     async load(osdApp: OSDApp) {
         setTimeout(() => {
-            this.visibleObjects.forEach(async (parameters) => {
+            this.initialObjectData.forEach(async (parameters) => {
                 const { objectName, x, y, z } = parameters;
                 const babylonPackedObjectReader = new BabylonPackedObjectReader(
                     this.scene, `${document.baseURI}objects/${objectName}`
@@ -84,18 +92,15 @@ export default class DynamicWorld {
                 const dynamicObject = await babylonPackedObjectReader.load();
                 const model = dynamicObject.model;
                 const manifest = dynamicObject.manifest;
-                model.name = objectName + Math.random();
+                const isStaticObject = manifest.isStaticObject ?? true;
+
 
                 if (model.parent) {
                     model.parent = null;
                 }
 
                 if (manifest.hasCollisions) {
-                    try {
-                        makeCollisions(dynamicObject, this.scene);
-                    } catch (e) {
-                        console.error(e);
-                    }
+                    makeCollisions(dynamicObject, this.scene);
                 }
 
                 if (manifest.isPlayerVehicle && manifest.isDefaultPlayerVehicle) {
@@ -110,6 +115,9 @@ export default class DynamicWorld {
                     model.rotation.y = parameters.rotateY;
                 }
 
+                if (!isStaticObject) {
+                    this.allDynamicObjects.push(dynamicObject);
+                }
             },  30000 * Math.random());
         });
     }

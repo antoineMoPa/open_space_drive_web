@@ -1,7 +1,6 @@
 import Vehicle from './Vehicle';
 
 export default class PlayerVehicle extends Vehicle {
-
     constructor(model, scene) {
         super(model, scene);
     }
@@ -34,6 +33,41 @@ export default class PlayerVehicle extends Vehicle {
                 this.watchedKeyCodes[code] = false;
             }
         });
+
+        this.scene.onKeyboardObservable.add((kbInfo) => {
+            const code = kbInfo.event.code.toString();
+            if (code === 'KeyJ' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
+                this.joinTrailer();
+            }
+        });
+
+    }
+
+    joinTrailer() {
+        if (this.trailer) {
+            return;
+        }
+
+        const trailer = this.scene.dynamicWorld
+            .allDynamicObjects
+            .filter(obj => obj.manifest.isTrailer)[0];
+        const joint = new BABYLON.PhysicsJoint(
+            BABYLON.PhysicsJoint.BallAndSocketJoint, {
+                mainAxis: new BABYLON.Vector3(0,1,0),
+                connectedAxis: new BABYLON.Vector3(0,1,0),
+                mainPivot: new BABYLON.Vector3(0,0,10),
+                connectedPivot: new BABYLON.Vector3(0,0,-10),
+            });
+
+        this.model.position.scale(0);
+        this.model.physicsImpostor.addJoint(trailer.model.physicsImpostor, joint);
+
+        //trailer.model.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0,0,0));
+        //trailer.model.physicsImpostor.setAngularVelocity(new BABYLON.Quaternion3(0,0,0,0));
+        //this.model.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0,0,0));
+        //this.model.physicsImpostor.setAngularVelocity(new BABYLON.Quaternion3(0,0,0,0));
+
+        this.trailer = trailer;
     }
 
     dispose() {
@@ -43,7 +77,13 @@ export default class PlayerVehicle extends Vehicle {
     updateControl(deltaTime) {
         let strength = 0.2 * deltaTime;
         const backStrength = 0.3 * strength;
-        const rotateStrength = 0.001 * deltaTime;
+        let rotateStrength = 0.001 * deltaTime;
+        const rollStrength = rotateStrength;
+
+        if (this.trailer) {
+            rotateStrength *= 60.0;
+        }
+
         const rotationMatrix = new BABYLON.Matrix();
         this.model.absoluteRotationQuaternion.toRotationMatrix(rotationMatrix);
 
@@ -72,10 +112,10 @@ export default class PlayerVehicle extends Vehicle {
             localAngularVelocityOffset.y += rotateStrength;
         }
         if (this.watchedKeyCodes.KeyA) {
-            localAngularVelocityOffset.z -= rotateStrength;
+            localAngularVelocityOffset.z -= rollStrength;
         }
         if (this.watchedKeyCodes.KeyD) {
-            localAngularVelocityOffset.z += rotateStrength;
+            localAngularVelocityOffset.z += rollStrength;
         }
         if (this.watchedKeyCodes.ArrowUp) {
             localAngularVelocityOffset.x -= rotateStrength;
@@ -83,7 +123,6 @@ export default class PlayerVehicle extends Vehicle {
         if (this.watchedKeyCodes.ArrowDown) {
             localAngularVelocityOffset.x += rotateStrength;
         }
-
         this.model.physicsImpostor.setLinearVelocity(
             velocity.add(localToGlobal(localVelocityOffset)));
         this.model.physicsImpostor.setAngularVelocity(
