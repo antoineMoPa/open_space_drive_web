@@ -1,9 +1,9 @@
 import * as BABYLON from 'babylonjs';
 import 'babylonjs-loaders';
 import Vehicle from './Vehicle';
-import PlayerVehicle from './PlayerVehicle';
 import DynamicWorld from './DynamicWorld';
 import FrameUpdater from './FrameUpdater';
+import Player from './Player';
 import * as CANNON from 'cannon';
 
 window.CANNON = CANNON;
@@ -12,14 +12,15 @@ export default class OSDApp {
     canvas : HTMLCanvasElement;
     engine : BABYLON.Engine;
     scene: BABYLON.Scene;
-    _playerVehicle : Vehicle;
     camera : BABYLON.UniversalCamera;
     cameraGoal: BABYLON.Mesh;
     cameraCurrent: BABYLON.Mesh;
     dynamicWorld: DynamicWorld;
+    player: Player = null;
 
     constructor() {
         window['_osdapp'] = this;
+        this.player = new Player(this);
         this.canvas = document.createElement('canvas');
         this.engine = new BABYLON.Engine(this.canvas, true);
         this.createScene();
@@ -33,17 +34,13 @@ export default class OSDApp {
 
         window.addEventListener('resize', this.resize.bind(this));
         this.resize();
-        this.dynamicWorld = new DynamicWorld(this.scene);
+        this.dynamicWorld = new DynamicWorld(this);
         this.dynamicWorld.load(this);
     }
 
     update() {
         const deltaTime = this.engine.getDeltaTime();
-
-        if (this._playerVehicle != null) {
-            this._playerVehicle.update(deltaTime);
-        }
-
+        this.player.update(deltaTime);
         this.updateCamera(deltaTime);
         FrameUpdater.update({ scene: this.scene });
     }
@@ -69,10 +66,6 @@ export default class OSDApp {
     }
 
     updateCamera(deltaTime) {
-        if (this._playerVehicle == null) {
-            return;
-        }
-
         const targetPosition = this.cameraGoal.getAbsolutePosition();
         const currentPosition = this.cameraCurrent.getAbsolutePosition();
         const targetRotation = this.cameraGoal.absoluteRotationQuaternion;
@@ -85,7 +78,6 @@ export default class OSDApp {
         this.cameraCurrent.rotationQuaternion = BABYLON.Quaternion.Slerp(this.cameraCurrent.absoluteRotationQuaternion, targetRotation, rotationFactor);
     }
 
-
     createScene() {
         const scene = new BABYLON.Scene(this.engine);
         this.scene = scene;
@@ -96,17 +88,13 @@ export default class OSDApp {
         this.createPhysics();
     };
 
+    set playerVehicle(_playerVehicle) {
+        this.player.playerVehicle = _playerVehicle;
+    }
+
     async createPhysics() {
         var gravityVector = new BABYLON.Vector3(0, 0, 0);
         var physicsPlugin = new BABYLON.CannonJSPlugin();
         this.scene.enablePhysics(gravityVector, physicsPlugin);
-    }
-
-    set playerVehicle(_playerVehicle) {
-        this._playerVehicle = new PlayerVehicle(
-            _playerVehicle.model,
-            this.scene,
-        );
-        this.cameraGoal.parent = _playerVehicle.model;
     }
 }

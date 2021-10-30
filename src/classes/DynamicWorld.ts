@@ -1,31 +1,38 @@
+import * as BABYLON from 'babylonjs';
 import BabylonPackedObjectReader from './BabylonPackedObjectReader';
 import OSDApp from './OSDApp';
-import makeCollisions from './CollisionObject.ts';
+import makeCollisions from './CollisionObject';
 
 export default class DynamicWorld {
     scene: BABYLON.Scene;
-    initialObjectData: [] = [];
-    allDynamicObjects:[] = [];
+    initialObjectData: any[] = [];
+    allDynamicObjects: any[] = [];
 
-    constructor(scene) {
-        this.scene = scene;
-        this.scene.dynamicWorld = this;
+    constructor(app) {
+        this.scene = app.scene;
         this.buildVehicles();
+
         this.buildTempBuildings();
         this.buildGround();
         this.buildWorldSphere();
     }
 
-    buildVehicles(app) {
+    buildVehicles() {
         this.initialObjectData.push({
             objectName: 'trailer_0001',
-            x: 0,
-            y: 10,
-            z: 40
+            x: 75,
+            y: 0,
+            z: 220
         });
         this.initialObjectData.push({
             objectName: 'truck_0001',
             x: 0,
+            y: 0,
+            z: 20
+        });
+        this.initialObjectData.push({
+            objectName: 'car_0001',
+            x: 20,
             y: 0,
             z: 20
         });
@@ -89,7 +96,7 @@ export default class DynamicWorld {
                 const babylonPackedObjectReader = new BabylonPackedObjectReader(
                     this.scene, `${document.baseURI}objects/${objectName}`
                 );
-                const dynamicObject = await babylonPackedObjectReader.load();
+                const dynamicObject = await babylonPackedObjectReader.load() as any;
                 const model = dynamicObject.model;
                 const manifest = dynamicObject.manifest;
                 const isStaticObject = manifest.isStaticObject ?? true;

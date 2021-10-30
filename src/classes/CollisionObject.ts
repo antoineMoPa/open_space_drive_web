@@ -2,7 +2,7 @@ import * as BABYLON from 'babylonjs';
 import FrameUpdater from './FrameUpdater';
 import DynamicObject from './DynamicObject';
 
-export default function makeCollisions(dynamicObject: any, scene: BABYLON.Scene, options: any) {
+export default function makeCollisions(dynamicObject: any, scene: BABYLON.Scene, options: any = {}) {
     if (!dynamicObject.velocity) {
         throw new Error('dynamicObject.velocity should exist.');
     }

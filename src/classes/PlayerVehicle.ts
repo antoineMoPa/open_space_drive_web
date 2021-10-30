@@ -1,8 +1,12 @@
 import Vehicle from './Vehicle';
+import OSDApp from './OSDApp';
 
 export default class PlayerVehicle extends Vehicle {
-    constructor(model, scene) {
+    app: OSDApp;
+
+    constructor(app, model, scene) {
         super(model, scene);
+        this.app = app;
     }
 
     listenKeyboard() {
@@ -39,6 +43,9 @@ export default class PlayerVehicle extends Vehicle {
             if (code === 'KeyJ' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
                 this.joinTrailer();
             }
+            if (code === 'KeyP' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
+                console.log(this.model.position);
+            }
         });
 
     }
@@ -48,9 +55,9 @@ export default class PlayerVehicle extends Vehicle {
             return;
         }
 
-        const trailer = this.scene.dynamicWorld
-            .allDynamicObjects
-            .filter(obj => obj.manifest.isTrailer)[0];
+        const trailer = (this.app.dynamicWorld
+            .allDynamicObjects as any)
+            .filter(obj => (obj as any).manifest.isTrailer)[0];
         const joint = new BABYLON.PhysicsJoint(
             BABYLON.PhysicsJoint.BallAndSocketJoint, {
                 mainAxis: new BABYLON.Vector3(0,1,0),
@@ -60,12 +67,7 @@ export default class PlayerVehicle extends Vehicle {
             });
 
         this.model.position.scale(0);
-        this.model.physicsImpostor.addJoint(trailer.model.physicsImpostor, joint);
-
-        //trailer.model.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0,0,0));
-        //trailer.model.physicsImpostor.setAngularVelocity(new BABYLON.Quaternion3(0,0,0,0));
-        //this.model.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0,0,0));
-        //this.model.physicsImpostor.setAngularVelocity(new BABYLON.Quaternion3(0,0,0,0));
+        this.model.physicsImpostor.addJoint(((trailer as any).model as any).physicsImpostor, joint);
 
         this.trailer = trailer;
     }
@@ -77,7 +79,7 @@ export default class PlayerVehicle extends Vehicle {
     updateControl(deltaTime) {
         let strength = 0.2 * deltaTime;
         const backStrength = 0.3 * strength;
-        let rotateStrength = 0.001 * deltaTime;
+        let rotateStrength = 0.002 * deltaTime;
         const rollStrength = rotateStrength;
 
         if (this.trailer) {
