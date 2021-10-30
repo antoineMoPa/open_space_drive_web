@@ -20,10 +20,10 @@ export default class OSDApp {
 
     constructor() {
         window['_osdapp'] = this;
-        this.player = new Player(this);
         this.canvas = document.createElement('canvas');
         this.engine = new BABYLON.Engine(this.canvas, true);
         this.createScene();
+        this.player = new Player(this);
         this.createCamera();
 
         this.engine.runRenderLoop(() => {
