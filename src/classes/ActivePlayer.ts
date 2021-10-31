@@ -1,16 +1,21 @@
-import Vehicle from './Vehicle';
+import * as BABYLON from 'babylonjs';
+import ActiveVehicle from './ActiveVehicle';
+import Player from './Player';
 import OSDApp from './OSDApp';
 
-export default class PlayerVehicle extends Vehicle {
-    app: OSDApp;
+export default class ActivePlayer extends Player {
+    _playerVehicle: ActiveVehicle;
+    watchedKeyCodes: any;
 
-    constructor(app, model, scene) {
-        super(model, scene);
-        this.app = app;
+    constructor(app) {
+        super(app);
+        this.app.cameraGoal.parent = this.model;
+        this.listenKeyboard();
     }
 
     listenKeyboard() {
-        this.watchedKeyCodes = {'KeyS': false,
+        this.watchedKeyCodes = {
+            'KeyS': false,
             'ArrowDown': false,
             'KeyW': false,
             'ArrowUp': false,
@@ -18,17 +23,19 @@ export default class PlayerVehicle extends Vehicle {
             'ArrowLeft': false,
             'KeyD': false,
             'Shift': false,
-            'ArrowRight': false};
+            'ArrowRight': false,
+            'Space': false
+        };
 
-        this.scene.onKeyboardObservable.add((kbInfo) => {
+        this.app.scene.onKeyboardObservable.add((kbInfo) => {
             const code = kbInfo.event.code.toString();
-
-            if ('Shift' in this.watchedKeyCodes) {
-                this.watchedKeyCodes['Shift'] = kbInfo.event.shiftKey;
-            }
 
             if (!(code in this.watchedKeyCodes)) {
                 return;
+            }
+
+            if ('Shift' in this.watchedKeyCodes) {
+                this.watchedKeyCodes['Shift'] = kbInfo.event.shiftKey;
             }
 
             if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYDOWN) {
@@ -38,53 +45,31 @@ export default class PlayerVehicle extends Vehicle {
             }
         });
 
-        this.scene.onKeyboardObservable.add((kbInfo) => {
+        this.app.scene.onKeyboardObservable.add((kbInfo) => {
             const code = kbInfo.event.code.toString();
-            if (code === 'KeyJ' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
-                this.joinTrailer();
+            if (code === 'KeyF' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
+                this.enterExitCar();
             }
-            if (code === 'KeyP' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
-                console.log(this.model.position);
+            if (code === 'Space' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
+                this.jump();
             }
         });
-
     }
 
-    joinTrailer() {
-        if (this.trailer) {
-            return;
-        }
-
-        const trailer = (this.app.dynamicWorld
-            .allDynamicObjects as any)
-            .filter(obj => (obj as any).manifest.isTrailer)[0];
-        const joint = new BABYLON.PhysicsJoint(
-            BABYLON.PhysicsJoint.BallAndSocketJoint, {
-                mainAxis: new BABYLON.Vector3(0,1,0),
-                connectedAxis: new BABYLON.Vector3(0,1,0),
-                mainPivot: new BABYLON.Vector3(0,0,10),
-                connectedPivot: new BABYLON.Vector3(0,0,-10),
-            });
-
-        this.model.position.scale(0);
-        this.model.physicsImpostor.addJoint(((trailer as any).model as any).physicsImpostor, joint);
-
-        this.trailer = trailer;
-    }
-
-    dispose() {
-        super.dispose();
+    jump() {
+        // TODO : check if there is the ground below, right now, we can jump forever from the
+        // void
+        const velocity = this.model.physicsImpostor.getLinearVelocity();
+        const globalVelocityOffset = new BABYLON.Vector3(0,0,0);
+        globalVelocityOffset.y += 60;
+        this.model.physicsImpostor.setLinearVelocity(velocity.add(globalVelocityOffset));
     }
 
     updateControl(deltaTime) {
         let strength = 0.2 * deltaTime;
-        const backStrength = 0.3 * strength;
+        const backStrength = strength;
         let rotateStrength = 0.002 * deltaTime;
         const rollStrength = rotateStrength;
-
-        if (this.trailer) {
-            rotateStrength *= 60.0;
-        }
 
         const rotationMatrix = new BABYLON.Matrix();
         this.model.absoluteRotationQuaternion.toRotationMatrix(rotationMatrix);
@@ -125,9 +110,9 @@ export default class PlayerVehicle extends Vehicle {
         if (this.watchedKeyCodes.ArrowDown) {
             localAngularVelocityOffset.x += rotateStrength;
         }
-        this.model.physicsImpostor.setLinearVelocity(
-            velocity.add(localToGlobal(localVelocityOffset)));
-        this.model.physicsImpostor.setAngularVelocity(
-            angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
+
+        const impostor = this.model.physicsImpostor;
+        impostor.setLinearVelocity(velocity.add(localToGlobal(localVelocityOffset)));
+        impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
     }
 }

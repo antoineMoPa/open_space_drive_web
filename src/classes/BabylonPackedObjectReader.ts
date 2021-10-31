@@ -72,7 +72,6 @@ export default class BabylonPackedObjectReader {
         if (manifest.hasCustomShader) {
             model.material = material;
         }
-        model.position.z = 200;
         resolve(dynamicObject);
 
         if (manifest.hasCustomShader) {

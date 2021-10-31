@@ -1,4 +1,5 @@
 import * as BABYLON from 'babylonjs';
+import FrameUpdater from './FrameUpdater';
 
 export default class Vehicle {
     model;
@@ -7,36 +8,21 @@ export default class Vehicle {
     velocity;
     angularVelocity;
     trailer: null;
+    frameUpdater = null;
 
     constructor(model, scene) {
         this.model = model;
         this.scene = scene;
-        this.velocity = new BABYLON.Vector3(0.0, 0.0, 0.0);
-        this.angularVelocity = new BABYLON.Vector3();
 
-        this.listenKeyboard();
+        this.frameUpdater = FrameUpdater.addUpdater(this.update.bind(this));
     }
 
     dispose() {
         this.model.dispose();
-    }
-
-    updatePhysics(deltaTime) {
-        const t = deltaTime;
-
-        this.model.rotate(BABYLON.Axis.X,
-            this.angularVelocity.x * t,
-            BABYLON.Space.WORLD);
-        this.model.rotate(BABYLON.Axis.Y,
-            this.angularVelocity.y * t,
-            BABYLON.Space.WORLD);
-        this.model.rotate(BABYLON.Axis.Z,
-            this.angularVelocity.z * t,
-            BABYLON.Space.WORLD);
+        FrameUpdater.removeUpdater(this.frameUpdater);
     }
 
     updateDamping(deltaTime) {
-
         const dampModel = (model, dampPerSecond, angularDampPerSecond) => {
             const dampingFactor = (1.0 - dampPerSecond * deltaTime);
             const angularDampingFactor = (1.0 - angularDampPerSecond * deltaTime);
@@ -49,7 +35,7 @@ export default class Vehicle {
         dampModel(this.model, 0.001, 0.001);
 
         if (this.trailer) {
-            dampModel(this.trailer.model, 0.001, 0.02);
+            dampModel((this.trailer as any).model, 0.001, 0.02);
         }
     }
 
@@ -57,9 +43,8 @@ export default class Vehicle {
 
     updateControl(deltaTime) { }
 
-    update(deltaTime) {
+    update({ deltaTime }) {
         this.updateControl(deltaTime);
-        this.updatePhysics(deltaTime);
         this.updateDamping(deltaTime);
     }
 }

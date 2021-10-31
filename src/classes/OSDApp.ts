@@ -3,7 +3,7 @@ import 'babylonjs-loaders';
 import Vehicle from './Vehicle';
 import DynamicWorld from './DynamicWorld';
 import FrameUpdater from './FrameUpdater';
-import Player from './Player';
+import ActivePlayer from './ActivePlayer';
 import * as CANNON from 'cannon';
 
 window.CANNON = CANNON;
@@ -16,15 +16,15 @@ export default class OSDApp {
     cameraGoal: BABYLON.Mesh;
     cameraCurrent: BABYLON.Mesh;
     dynamicWorld: DynamicWorld;
-    player: Player = null;
+    player: ActivePlayer = null;
 
     constructor() {
         window['_osdapp'] = this;
         this.canvas = document.createElement('canvas');
         this.engine = new BABYLON.Engine(this.canvas, true);
         this.createScene();
-        this.player = new Player(this);
         this.createCamera();
+        this.player = new ActivePlayer(this);
 
         this.engine.runRenderLoop(() => {
             this.update();
@@ -40,9 +40,8 @@ export default class OSDApp {
 
     update() {
         const deltaTime = this.engine.getDeltaTime();
-        this.player.update(deltaTime);
         this.updateCamera(deltaTime);
-        FrameUpdater.update({ scene: this.scene });
+        FrameUpdater.update({ scene: this.scene, deltaTime: deltaTime });
     }
 
     resize() {
@@ -57,7 +56,7 @@ export default class OSDApp {
         this.camera = new BABYLON.UniversalCamera('camera', new BABYLON.Vector3(0, 0, 0), this.scene);
 
         this.cameraGoal.position.z += 30;
-        this.cameraGoal.position.y += 10;
+        this.cameraGoal.position.y += 4;
         this.cameraGoal.rotation.y -= Math.PI;
 
         this.camera.parent = this.cameraCurrent;
@@ -83,7 +82,7 @@ export default class OSDApp {
         this.scene = scene;
         new BABYLON.HemisphericLight('light', new BABYLON.Vector3(1, 1, 0), this.scene);
 
-        this.scene._inputManager._onCanvasFocusObserver.callback();
+        (this.scene._inputManager._onCanvasFocusObserver as any).callback();
         this.canvas.focus();
         this.createPhysics();
     };

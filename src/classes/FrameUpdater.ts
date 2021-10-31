@@ -41,9 +41,9 @@ export default class FrameUpdater {
         }
     }
 
-    static update({ scene }) {
+    static update({ scene, deltaTime }) {
         for (const callback in FrameUpdater.callbacks) {
-            FrameUpdater.callbacks[callback]({ scene });
+            FrameUpdater.callbacks[callback]({ scene, deltaTime });
         }
     }
 

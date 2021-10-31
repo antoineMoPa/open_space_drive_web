@@ -21,19 +21,19 @@ export default class DynamicWorld {
         this.initialObjectData.push({
             objectName: 'trailer_0001',
             x: 75,
-            y: 0,
+            y: 10,
             z: 220
         });
         this.initialObjectData.push({
             objectName: 'truck_0001',
             x: 0,
-            y: 0,
+            y: 10,
             z: 20
         });
         this.initialObjectData.push({
             objectName: 'car_0001',
             x: 20,
-            y: 0,
+            y: 10,
             z: 20
         });
     }
@@ -67,17 +67,17 @@ export default class DynamicWorld {
         });
 
 
-        for (let i = 0; i < 20; i++) {
-            for (let j = 0; j < 20; j++) {
-                this.initialObjectData.push({
-                    objectName: 'palm_tree_0001',
-                    x: (Math.random() - 0.5) * 2000,
-                    y: 0,
-                    z: (Math.random() - 0.5) * 2000 + 1000,
-                    rotateY: (Math.random() - 0.5) * Math.PI
-                });
-            }
-        }
+        // for (let i = 0; i < 20; i++) {
+        //     for (let j = 0; j < 20; j++) {
+        //         this.initialObjectData.push({
+        //             objectName: 'palm_tree_0001',
+        //             x: (Math.random() - 0.5) * 2000,
+        //             y: 0,
+        //             z: (Math.random() - 0.5) * 2000 + 1000,
+        //             rotateY: (Math.random() - 0.5) * Math.PI
+        //         });
+        //     }
+        // }
     }
 
     buildWorldSphere() {
@@ -110,7 +110,7 @@ export default class DynamicWorld {
                     makeCollisions(dynamicObject, this.scene);
                 }
 
-                if (manifest.isPlayerVehicle && manifest.isDefaultPlayerVehicle) {
+                if (manifest.isActiveVehicle && manifest.isDefaultActiveVehicle) {
                     osdApp.playerVehicle = dynamicObject;
                 }
 
