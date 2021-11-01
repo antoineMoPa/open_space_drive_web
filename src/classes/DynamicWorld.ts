@@ -2,14 +2,15 @@ import * as BABYLON from 'babylonjs';
 import BabylonPackedObjectReader from './BabylonPackedObjectReader';
 import OSDApp from './OSDApp';
 import makeCollisions from './CollisionObject';
+import Vehicle from './Vehicle';
 
 export default class DynamicWorld {
-    scene: BABYLON.Scene;
     initialObjectData: any[] = [];
     allDynamicObjects: any[] = [];
+    private allVehicles: Vehicle[] = [];
 
     constructor(app) {
-        this.scene = app.scene;
+        this.app = app;
         this.buildVehicles();
 
         this.buildTempBuildings();
@@ -17,23 +18,27 @@ export default class DynamicWorld {
         this.buildWorldSphere();
     }
 
+    get vehicles() {
+        return this.allVehicles;
+    }
+
     buildVehicles() {
         this.initialObjectData.push({
             objectName: 'trailer_0001',
             x: 75,
-            y: 10,
+            y: 3,
             z: 220
         });
         this.initialObjectData.push({
             objectName: 'truck_0001',
-            x: 0,
-            y: 10,
+            x: -10,
+            y: 2,
             z: 20
         });
         this.initialObjectData.push({
             objectName: 'car_0001',
             x: 20,
-            y: 10,
+            y: 2.5,
             z: 20
         });
     }
@@ -89,43 +94,54 @@ export default class DynamicWorld {
         });
     }
 
-    async load(osdApp: OSDApp) {
-        setTimeout(() => {
-            this.initialObjectData.forEach(async (parameters) => {
-                const { objectName, x, y, z } = parameters;
-                const babylonPackedObjectReader = new BabylonPackedObjectReader(
-                    this.scene, `${document.baseURI}objects/${objectName}`
-                );
-                const dynamicObject = await babylonPackedObjectReader.load() as any;
-                const model = dynamicObject.model;
-                const manifest = dynamicObject.manifest;
-                const isStaticObject = manifest.isStaticObject ?? true;
+    async load() {
+        const app = this.app;
+        await new Promise((resolve) => {
+            let numLoaded = 0;
+            setTimeout(() => {
+                this.initialObjectData.forEach(async (parameters) => {
+                    const { objectName, x, y, z } = parameters;
+                    const babylonPackedObjectReader = new BabylonPackedObjectReader(
+                        app.scene, `${document.baseURI}objects/${objectName}`
+                    );
 
+                    const dynamicObject = await babylonPackedObjectReader.load() as any;
+                    const model = dynamicObject.model;
+                    const manifest = dynamicObject.manifest;
+                    const isStaticObject = manifest.isStaticObject ?? true;
 
-                if (model.parent) {
-                    model.parent = null;
-                }
+                    model.position.scaleInPlace(0);
 
-                if (manifest.hasCollisions) {
-                    makeCollisions(dynamicObject, this.scene);
-                }
+                    if (model.parent) {
+                        model.parent = null;
+                    }
 
-                if (manifest.isActiveVehicle && manifest.isDefaultActiveVehicle) {
-                    osdApp.playerVehicle = dynamicObject;
-                }
+                    model.position.x += x;
+                    model.position.y += y;
+                    model.position.z += z;
 
-                model.position.x += x;
-                model.position.y += y;
-                model.position.z += z;
+                    if (manifest.hasCollisions) {
+                        makeCollisions(dynamicObject, app.scene);
+                    }
 
-                if (parameters.rotateY) {
-                    model.rotation.y = parameters.rotateY;
-                }
+                    if (manifest.isVehicle) {
+                        this.allVehicles.push(new Vehicle(app, dynamicObject));
+                    }
 
-                if (!isStaticObject) {
-                    this.allDynamicObjects.push(dynamicObject);
-                }
-            },  30000 * Math.random());
+                    if (parameters.rotateY) {
+                        model.rotation.y = parameters.rotateY;
+                    }
+
+                    if (!isStaticObject) {
+                        this.allDynamicObjects.push(dynamicObject);
+                    }
+
+                    numLoaded++;
+                    if (numLoaded === this.initialObjectData.length) {
+                        resolve();
+                    }
+                },  3000 * Math.random());
+            });
         });
     }
 }

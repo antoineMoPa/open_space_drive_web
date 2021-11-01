@@ -1,7 +1,7 @@
 import * as BABYLON from 'babylonjs';
 import PackedObject from './PackedObject';
-import FrameUpdater from './FrameUpdater.ts';
-import DynamicObject from './DynamicObject.ts';
+import FrameUpdater from './FrameUpdater';
+import DynamicObject from './DynamicObject';
 import OSDApp from './OSDApp';
 
 export default class BabylonPackedObjectReader {
@@ -35,7 +35,6 @@ export default class BabylonPackedObjectReader {
                 return meshName.indexOf(name) !== -1 && meshName.indexOf('osd-instance-') === -1
             });
 
-
         const randName = name + '.osd-instance-' + Math.random();
         let model = scene.getMeshByName(name + '_box');
         if (model) {
@@ -48,25 +47,6 @@ export default class BabylonPackedObjectReader {
         }
 
         model.name = randName;
-        //
-        // if (matchingMeshes.length === 0) {
-        //     throw new Error(`Mesh ${name} not found in ${path}/model.glb`);
-        // } else if (matchingMeshes.length === 1) {
-        //     model = matchingMeshes[0];
-        //     model.name = randName;
-        // } else {
-        //     // Find the mandatory collision box to make it the parent
-        //     debugger;
-        //     const collisionBox = matchingMeshes.filter(
-        //         mesh => mesh.name.indexOf('_collision') !== -1
-        //     )[0];
-        //     //collisionBox.name = randName;
-        //     model = collisionBox;
-        //     matchingMeshes.forEach(mesh => {
-        //         model.addChild(mesh)
-        //         mesh.name = randName + '.osd-instance-';
-        //     });
-        // }
 
         const dynamicObject = new DynamicObject(model, manifest);
         if (manifest.hasCustomShader) {
@@ -99,8 +79,8 @@ export default class BabylonPackedObjectReader {
         }
 
         return new Promise((resolve, reject) => {
-            const AssetsManager = new BABYLON.AssetsManager();
-            const task = AssetsManager.addMeshTask(
+            const assetsManager = new BABYLON.AssetsManager(scene);
+            const task = assetsManager.addMeshTask(
                 'add-'+name,
                 null,
                 path + '/',
@@ -115,11 +95,11 @@ export default class BabylonPackedObjectReader {
                 }
             }
 
-            task.onErrorCallback = (task, message) => {
+            assetsManager.onTaskErrorObservable.add((task, message) => {
                 reject(message);
-            };
+            });
 
-            task.run();
+            assetsManager.load();
         });
     }
 

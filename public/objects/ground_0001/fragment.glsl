@@ -10,8 +10,8 @@ varying vec3 vNormal;
 void main(void) {
     vec4 col = vec4(0.0);
 
-    int i = int(vPosition.x * 20.0) + 4390;
-    int j = int(vPosition.z * 20.0) + 34000;
+    int i = int(vPosition.x * 2.0) + 4390;
+    int j = int(vPosition.z * 2.0) + 34000;
     float tiling = ((i ^ j) % (j / i) < 1) ? 1.0: 0.0;
     col.r = tiling * 0.4;
     col.b = tiling * 0.8;

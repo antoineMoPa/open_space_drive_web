@@ -35,7 +35,7 @@ export default class OSDApp {
         window.addEventListener('resize', this.resize.bind(this));
         this.resize();
         this.dynamicWorld = new DynamicWorld(this);
-        this.dynamicWorld.load(this);
+        this.dynamicWorld.load();
     }
 
     update() {
@@ -82,14 +82,10 @@ export default class OSDApp {
         this.scene = scene;
         new BABYLON.HemisphericLight('light', new BABYLON.Vector3(1, 1, 0), this.scene);
 
-        (this.scene._inputManager._onCanvasFocusObserver as any).callback();
+        (this.scene._inputManager as any)._onCanvasFocusObserver.callback();
         this.canvas.focus();
         this.createPhysics();
     };
-
-    set playerVehicle(_playerVehicle) {
-        this.player.playerVehicle = _playerVehicle;
-    }
 
     async createPhysics() {
         var gravityVector = new BABYLON.Vector3(0, 0, 0);

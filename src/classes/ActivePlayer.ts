@@ -1,10 +1,10 @@
 import * as BABYLON from 'babylonjs';
-import ActiveVehicle from './ActiveVehicle';
+import Vehicle from './Vehicle';
 import Player from './Player';
 import OSDApp from './OSDApp';
 
 export default class ActivePlayer extends Player {
-    _playerVehicle: ActiveVehicle;
+    _playerVehicle: Vehicle;
     watchedKeyCodes: any;
 
     constructor(app) {
@@ -48,10 +48,12 @@ export default class ActivePlayer extends Player {
         this.app.scene.onKeyboardObservable.add((kbInfo) => {
             const code = kbInfo.event.code.toString();
             if (code === 'KeyF' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
-                this.enterExitCar();
+                this.enterExitVehicle();
             }
             if (code === 'Space' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
-                this.jump();
+                if (!this.isInVehicle) {
+                    this.jump();
+                }
             }
         });
     }
@@ -66,6 +68,9 @@ export default class ActivePlayer extends Player {
     }
 
     updateControl(deltaTime) {
+        if (this.isInVehicle) {
+            return;
+        }
         let strength = 0.2 * deltaTime;
         const backStrength = strength;
         let rotateStrength = 0.002 * deltaTime;

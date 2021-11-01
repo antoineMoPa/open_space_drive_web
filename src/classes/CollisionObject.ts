@@ -18,7 +18,7 @@ export class CollisionObject {
         this.dynamicObject = dynamicObject;
         this.isStaticObject = dynamicObject.manifest.isStaticObject ?? true;
 
-        const mass = this.isStaticObject ? 0 : 1;
+        const mass = this.isStaticObject ? 0 : dynamicObject.manifest.mass || 1;
         const restitution = dynamicObject.manifest.restitution || 0.1;
         const friction = dynamicObject.manifest.friction || 0.9;
         let model = this.dynamicObject.model;
