@@ -10,11 +10,12 @@ export default class Player {
     model: BABYLON.AbstractMesh;
     vehicle: Vehicle = null;
     frameUpdater: FrameUpdater;
-    public dynamicObject: DynamicObject;
+    private dynamicObject: DynamicObject;
 
     constructor({ app, dynamicObject }) {
         this.app = app;
         this.model = dynamicObject.model;
+        this.dynamicObject = dynamicObject;
         this.frameUpdater = FrameUpdater.addUpdater(this.update.bind(this));
     }
 
@@ -52,6 +53,10 @@ export default class Player {
         this.enablePhysics();
         this.vehicle.playerExit();
         this.vehicle = null;
+    }
+
+    enablePhysics() {
+        makeCollisions(this.dynamicObject, this.app.scene);
     }
 
     get isInVehicle() {

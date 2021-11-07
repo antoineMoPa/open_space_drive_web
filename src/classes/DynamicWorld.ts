@@ -129,7 +129,6 @@ export default class DynamicWorld {
                     }
                     if (manifest.isMainPlayer) {
                         app.player = new ActivePlayer(app, dynamicObject);
-
                         dynamicObject.poseModel.parent.parent = model;
                     }
 
