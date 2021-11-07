@@ -3,7 +3,7 @@ import FrameUpdater from './FrameUpdater';
 
 export default class Vehicle {
     private app;
-    private dynamicObject;
+    public dynamicObject;
     private watchedKeyCodes;
     private trailer: null;
     private frameUpdater = null;

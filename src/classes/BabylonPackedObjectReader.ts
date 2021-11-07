@@ -36,22 +36,25 @@ export default class BabylonPackedObjectReader {
             });
 
         const randName = name + '.osd-instance-' + Math.random();
-        let model = scene.getMeshByName(name + '_box');
+        let boxModel = scene.getMeshByName(name + '_box');
+        let model = scene.getMeshByName(name);
+        if (boxModel) {
+            boxModel.isVisible = false;
+            boxModel.name = randName + '_box';
+        }
         if (model) {
-            // Make parent bounding box invisible
-            // By convention, the parent object of a model will be a bounding box to help
-            // collision detection.
-            model.isVisible = false;
-        } else {
-            model = scene.getMeshByName(name);
+            model.name = randName;
         }
 
-        model.name = randName;
-
-        const dynamicObject = new DynamicObject(model, manifest);
+        const dynamicObject = new DynamicObject(boxModel || model, manifest);
         if (manifest.hasCustomShader) {
             model.material = material;
         }
+
+        if (manifest.isPlayer) {
+            dynamicObject.poseModel = model;
+        }
+
         resolve(dynamicObject);
 
         if (manifest.hasCustomShader) {
@@ -59,7 +62,7 @@ export default class BabylonPackedObjectReader {
                 const cameraPosition = scene.cameras[0].globalPosition;
                 material.setVector3(
                     'cameraPosition',
-                    cameraPosition.subtract(model.getAbsolutePosition())
+                    cameraPosition.subtract((boxModel || model).getAbsolutePosition())
                 );
             });
         }

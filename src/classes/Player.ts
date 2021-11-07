@@ -8,12 +8,13 @@ import FrameUpdater from './FrameUpdater';
 export default class Player {
     app: OSDApp
     model: BABYLON.AbstractMesh;
-    dynamicObject;
-    vehicle: null;
+    vehicle: Vehicle = null;
+    frameUpdater: FrameUpdater;
+    public dynamicObject: DynamicObject;
 
-    constructor(app) {
+    constructor({ app, dynamicObject }) {
         this.app = app;
-        this.buildModel();
+        this.model = dynamicObject.model;
         this.frameUpdater = FrameUpdater.addUpdater(this.update.bind(this));
     }
 
@@ -53,47 +54,6 @@ export default class Player {
         this.vehicle = null;
     }
 
-    buildModel() {
-        const collisionParent =  BABYLON.MeshBuilder.CreateBox("box", {
-        }, this.app.scene);
-
-        collisionParent.isVisible = false;
-
-        this.model = collisionParent;
-        this.model.position.x = 0;
-        this.model.position.z = 0;
-        this.model.position.y = 10;
-        this.model.rotation.y = Math.PI;
-
-        const head = BABYLON.MeshBuilder.CreateSphere("sphere", {
-        }, this.app.scene);
-        const body = BABYLON.MeshBuilder.CreateCylinder("test", {
-            height: 1.0
-        }, this.app.scene);
-
-        this.model.addChild(head);
-        this.model.addChild(body);
-
-        head.position.y = 1;
-        body.position.y = 0.5;
-
-        const material = new BABYLON.StandardMaterial("playerMaterial", this.app.scene);
-        material.diffuseColor = new BABYLON.Color3(1, 0, 0);
-        head.material = material;
-        body.material = material;
-
-        const dynamicObject = new DynamicObject(this.model, {
-            isStaticObject: false,
-            mass: 70
-        });
-        this.dynamicObject = dynamicObject;
-        this.enablePhysics();
-    }
-
-    enablePhysics() {
-        makeCollisions(this.dynamicObject, this.app.scene);
-    }
-
     get isInVehicle() {
         return this.model.parent !== null;
     }
@@ -102,6 +62,7 @@ export default class Player {
         if (this.isInVehicle) {
             return;
         }
+
         const dampModel = (model, dampPerSecond, angularDampPerSecond) => {
             const dampingFactor = (1.0 - dampPerSecond * deltaTime);
             const angularDampingFactor = (1.0 - angularDampPerSecond * deltaTime);
@@ -126,9 +87,27 @@ export default class Player {
         this.model.physicsImpostor.setLinearVelocity(velocity.add(new BABYLON.Vector3(0,-3,0)));
     }
 
+    updateAnimation() {
+        const walking = this.model.physicsImpostor.getLinearVelocity().length() > 10;
+        const animationGroup = this.app.scene.getAnimationGroupByName('player_0001_walk');
+
+        if (!animationGroup) {
+            return;
+        }
+
+        if (animationGroup.isPlaying != walking) {
+            if (walking) {
+                animationGroup.play();
+            } else {
+                animationGroup.pause();
+            }
+        }
+    }
+
     update({ deltaTime }) {
         this.updateControl(deltaTime);
         this.updateDamping(deltaTime);
         this.updateGravity(deltaTime);
+        this.updateAnimation();
     }
 }

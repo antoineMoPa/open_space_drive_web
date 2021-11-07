@@ -4,6 +4,7 @@ export default class DynamicObject {
     velocity:BABYLON.Vector3 = new BABYLON.Vector3(0.0, 0.0, 0.0);
     _model = null;
     _manifest = null;
+    _poseModel = null;
 
     constructor(model, manifest) {
         this._model = model;
@@ -12,6 +13,14 @@ export default class DynamicObject {
 
     get model() {
         return this._model;
+    }
+
+    get poseModel() {
+        return this._poseModel;
+    }
+
+    set poseModel(poseModel) {
+        this._poseModel = poseModel;
     }
 
     get manifest() {

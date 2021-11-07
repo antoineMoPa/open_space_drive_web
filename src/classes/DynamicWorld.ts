@@ -3,11 +3,13 @@ import BabylonPackedObjectReader from './BabylonPackedObjectReader';
 import OSDApp from './OSDApp';
 import makeCollisions from './CollisionObject';
 import Vehicle from './Vehicle';
+import ActivePlayer from './ActivePlayer';
 
 export default class DynamicWorld {
     initialObjectData: any[] = [];
     allDynamicObjects: any[] = [];
     private allVehicles: Vehicle[] = [];
+    app: OSDApp;
 
     constructor(app) {
         this.app = app;
@@ -16,10 +18,20 @@ export default class DynamicWorld {
         this.buildTempBuildings();
         this.buildGround();
         this.buildWorldSphere();
+        this.buildPlayers();
     }
 
     get vehicles() {
         return this.allVehicles;
+    }
+
+    buildPlayers() {
+        this.initialObjectData.push({
+            objectName: 'player_0001',
+            x: 20,
+            y: 2.5,
+            z: 50
+        });
     }
 
     buildVehicles() {
@@ -115,6 +127,11 @@ export default class DynamicWorld {
                     if (model.parent) {
                         model.parent = null;
                     }
+                    if (manifest.isMainPlayer) {
+                        app.player = new ActivePlayer(app, dynamicObject);
+
+                        dynamicObject.poseModel.parent.parent = model;
+                    }
 
                     model.position.x += x;
                     model.position.y += y;
@@ -127,15 +144,18 @@ export default class DynamicWorld {
                     if (manifest.isVehicle) {
                         this.allVehicles.push(new Vehicle(app, dynamicObject));
                     }
-
                     if (parameters.rotateY) {
                         model.rotation.y = parameters.rotateY;
+                    }
+
+                    if (manifest.isPlayer) {
+                        this.app.player.model = model;
+                        this.app.player.dynamicObject = dynamicObject;
                     }
 
                     if (!isStaticObject) {
                         this.allDynamicObjects.push(dynamicObject);
                     }
-
                     numLoaded++;
                     if (numLoaded === this.initialObjectData.length) {
                         resolve();

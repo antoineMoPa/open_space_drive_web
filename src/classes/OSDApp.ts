@@ -24,7 +24,6 @@ export default class OSDApp {
         this.engine = new BABYLON.Engine(this.canvas, true);
         this.createScene();
         this.createCamera();
-        this.player = new ActivePlayer(this);
 
         this.engine.runRenderLoop(() => {
             this.update();

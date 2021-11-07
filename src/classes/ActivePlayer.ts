@@ -6,11 +6,20 @@ import OSDApp from './OSDApp';
 export default class ActivePlayer extends Player {
     _playerVehicle: Vehicle;
     watchedKeyCodes: any;
+    _model: BABYLON.AbstractMesh;
 
-    constructor(app) {
-        super(app);
-        this.app.cameraGoal.parent = this.model;
+    constructor(app, dynamicObject) {
+        super({app, dynamicObject});
         this.listenKeyboard();
+    }
+
+    set model(model) {
+        this._model = model;
+        this.app.cameraGoal.parent = this._model;
+    }
+
+    get model() {
+        return this._model;
     }
 
     listenKeyboard() {
