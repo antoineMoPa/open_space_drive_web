@@ -47,6 +47,8 @@ export default class BabylonPackedObjectReader {
         }
 
         const dynamicObject = new DynamicObject(boxModel || model, manifest);
+        dynamicObject.boxModel = boxModel;
+
         if (manifest.hasCustomShader) {
             model.material = material;
         }

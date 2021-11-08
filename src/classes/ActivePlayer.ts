@@ -74,6 +74,10 @@ export default class ActivePlayer extends Player {
         const globalVelocityOffset = new BABYLON.Vector3(0,0,0);
         globalVelocityOffset.y += 60;
         this.model.physicsImpostor.setLinearVelocity(velocity.add(globalVelocityOffset));
+        this.model.rotationQuaternion.w = 1;
+        this.model.rotationQuaternion.x = 0;
+        this.model.rotationQuaternion.y = 0;
+        this.model.rotationQuaternion.z = 0;
     }
 
     updateControl(deltaTime) {
