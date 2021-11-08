@@ -123,7 +123,7 @@ export default class DynamicWorld {
                 dynamicObject = sourceDynamicObject.clone();
             }
             const { x, y, z } = parameters;
-            const model = dynamicObject.model;
+            const model = dynamicObject.physicsModel;
             const manifest = dynamicObject.manifest;
             const isStaticObject = manifest.isStaticObject ?? true;
 

@@ -9,13 +9,19 @@ export default class DynamicObject {
     _poseModel = null;
     _boxModel = null;
 
-    constructor(model, manifest) {
+    constructor({ model, boxModel, manifest }) {
         this._model = model;
+        this._boxModel = boxModel;
         this._manifest = manifest;
     }
 
     clone() {
-        const dynamicObject = new DynamicObject(this._model.clone(), cloneDeep(this._manifest));
+        const dynamicObject = new DynamicObject({
+            model: this._model ? this._model.clone() : null,
+            boxModel: this._boxModel ? this._boxModel.clone() : null,
+            poseModel: this._poseModel ? this._poseModel.clone() : null,
+            manifest: this._manifest ? cloneDeep(this._manifest) : {}
+        });
         if (this._poseModel) {
             dynamicObject._poseModel = this._poseModel.clone();
         }
@@ -47,5 +53,9 @@ export default class DynamicObject {
 
     set boxModel(boxModel) {
         this._boxModel = boxModel;
+    }
+
+    get physicsModel() {
+        return this.boxModel || this.model;
     }
 }

@@ -14,7 +14,6 @@ export default class Player {
 
     constructor({ app, dynamicObject }) {
         this.app = app;
-        this.model = dynamicObject.model;
         this.dynamicObject = dynamicObject;
         this.frameUpdater = FrameUpdater.addUpdater(this.update.bind(this));
     }
@@ -28,28 +27,31 @@ export default class Player {
     }
 
     enterVehicle() {
-        const position = this.model.position;
+        const position = this.dynamicObject.boxModel.position;
         this.app.dynamicWorld.vehicles.forEach((vehicle) => {
-            const distance = vehicle.dynamicObject.model.position.subtract(position).length();
+            const distance = vehicle.dynamicObject
+                .physicsModel.position.subtract(position).length();
 
             if (distance < 10) {
                 this.vehicle = vehicle;
-                this.model.setParent(vehicle.dynamicObject.model);
-                this.model.physicsImpostor.dispose();
-                this.model.position.scaleInPlace(0);
-                this.model.position.y -= 0.5;
-                this.app.cameraGoal.parent = vehicle.dynamicObject.model;
+                this.dynamicObject.boxModel.setParent(vehicle.dynamicObject.physicsModel);
+                this.dynamicObject.boxModel.physicsImpostor.dispose();
+                this.dynamicObject.boxModel.position.scaleInPlace(0);
+                this.dynamicObject.boxModel.position.y -= 0.5;
+                this.app.cameraGoal.parent = vehicle.dynamicObject.physicsModel;
+                this.dynamicObject.model.isVisible = false;
                 vehicle.playerEnter();
             }
         });
     }
 
     exitVehicle() {
-        this.model.setParent(null);
-        this.model.physicsImpostor.physicsBody.wakeUp();
-        this.model.position = this.vehicle.dynamicObject.model.position.clone();
-        this.model.position.addInPlace(new BABYLON.Vector3(1,0,0));
-        this.app.cameraGoal.parent = this.model;
+        this.dynamicObject.boxModel.setParent(null);
+        this.dynamicObject.boxModel.physicsImpostor.physicsBody.wakeUp();
+        this.dynamicObject.boxModel.position = this.vehicle.dynamicObject.physicsModel.position.clone();
+        this.dynamicObject.boxModel.position.addInPlace(new BABYLON.Vector3(1,0,0));
+        this.dynamicObject.model.isVisible = true;
+        this.app.cameraGoal.parent = this.dynamicObject.boxModel;
         this.enablePhysics();
         this.vehicle.playerExit();
         this.vehicle = null;
@@ -60,7 +62,7 @@ export default class Player {
     }
 
     get isInVehicle() {
-        return this.model.parent !== null;
+        return this.dynamicObject.boxModel.parent !== null;
     }
 
     updateDamping(deltaTime) {
@@ -77,7 +79,7 @@ export default class Player {
             model.physicsImpostor.setAngularVelocity(angularVelocity.scale(angularDampingFactor));
         };
 
-        dampModel(this.model, 0.01, 0.001);
+        dampModel(this.dynamicObject.boxModel, 0.01, 0.001);
     }
 
     listenKeyboard() { }
@@ -88,12 +90,12 @@ export default class Player {
         if (this.isInVehicle) {
             return;
         }
-        const velocity = this.model.physicsImpostor.getLinearVelocity();
-        this.model.physicsImpostor.setLinearVelocity(velocity.add(new BABYLON.Vector3(0,-3,0)));
+        const velocity = this.dynamicObject.boxModel.physicsImpostor.getLinearVelocity();
+        this.dynamicObject.boxModel.physicsImpostor.setLinearVelocity(velocity.add(new BABYLON.Vector3(0,-3,0)));
     }
 
     updateAnimation() {
-        const walking = this.model.physicsImpostor.getLinearVelocity().length() > 10;
+        const walking = this.dynamicObject.boxModel.physicsImpostor.getLinearVelocity().length() > 10;
         const animationGroup = this.app.scene.getAnimationGroupByName('player_0001_walk');
 
         if (!animationGroup) {

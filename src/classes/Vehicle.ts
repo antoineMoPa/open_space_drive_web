@@ -39,7 +39,7 @@ export default class Vehicle {
             model.physicsImpostor.setAngularVelocity(angularVelocity.scale(angularDampingFactor));
         };
 
-        dampModel(this.dynamicObject.model, 0.001, 0.001);
+        dampModel(this.dynamicObject.physicsModel, 0.001, 0.001);
 
         if (this.trailer) {
             dampModel((this.trailer as any).model, 0.001, 0.02);
@@ -108,8 +108,9 @@ export default class Vehicle {
                 connectedPivot: new BABYLON.Vector3(0,0,-10),
             });
 
-        this.dynamicObject.model.position.scale(0);
-        this.dynamicObject.model.physicsImpostor.addJoint(((trailer as any).model as any).physicsImpostor, joint);
+        const model = this.dynamicObject.physicsModel;
+        model.position.scale(0);
+        model.physicsImpostor.addJoint(((trailer as any).model as any).physicsImpostor, joint);
 
         this.trailer = trailer;
     }
@@ -133,14 +134,14 @@ export default class Vehicle {
         }
 
         const rotationMatrix = new BABYLON.Matrix();
-        this.dynamicObject.model.absoluteRotationQuaternion.toRotationMatrix(rotationMatrix);
+        this.dynamicObject.physicsModel.absoluteRotationQuaternion.toRotationMatrix(rotationMatrix);
 
         const localToGlobal = (vector) => {
             return BABYLON.Vector3.TransformCoordinates(vector, rotationMatrix);
         };
 
-        const velocity = this.dynamicObject.model.physicsImpostor.getLinearVelocity();
-        const angularVelocity = this.dynamicObject.model.physicsImpostor.getAngularVelocity();
+        const velocity = this.dynamicObject.physicsModel.physicsImpostor.getLinearVelocity();
+        const angularVelocity = this.dynamicObject.physicsModel.physicsImpostor.getAngularVelocity();
         const localVelocityOffset = new BABYLON.Vector3(0,0,0);
         const localAngularVelocityOffset = new BABYLON.Vector3(0,0,0);
 
@@ -171,7 +172,7 @@ export default class Vehicle {
         if (this.watchedKeyCodes.ArrowDown) {
             localAngularVelocityOffset.x += rotateStrength;
         }
-        const impostor = this.dynamicObject.model.physicsImpostor;
+        const impostor = this.dynamicObject.physicsModel.physicsImpostor;
         impostor.setLinearVelocity(velocity.add(localToGlobal(localVelocityOffset)));
         impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
     }

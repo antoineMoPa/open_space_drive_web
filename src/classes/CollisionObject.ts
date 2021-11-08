@@ -2,9 +2,6 @@ import * as BABYLON from 'babylonjs';
 import DynamicObject from './DynamicObject';
 
 export default function makeCollisions(dynamicObject: any, scene: BABYLON.Scene, options: any = {}) {
-    if (!dynamicObject.model) {
-        throw new Error('dynamicObject.model should exist.');
-    }
     dynamicObject.collisionObject = new CollisionObject(dynamicObject, scene, options);
 }
 
@@ -21,7 +18,7 @@ export class CollisionObject {
         const mass = this.isStaticObject ? 0 : dynamicObject.manifest.mass || 1;
         const restitution = dynamicObject.manifest.restitution || 0.1;
         const friction = dynamicObject.manifest.friction || 0.9;
-        let model = this.dynamicObject.model;
+        const model = dynamicObject.physicsModel;
         const children = model.getChildren();
 
         model.physicsImpostor = new BABYLON.PhysicsImpostor(
