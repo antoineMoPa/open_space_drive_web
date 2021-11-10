@@ -1,0 +1,7 @@
+{
+    "hasCustomShader":false,
+    "hasCollisions":true,
+    "isStaticObject":false,
+    "isPlayer": true,
+    "mass": 80
+}

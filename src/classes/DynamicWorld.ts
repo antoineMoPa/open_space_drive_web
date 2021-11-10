@@ -50,6 +50,11 @@ export default class DynamicWorld {
             y: 2.5,
             z: 20
         }];
+        this.initialObjectData['car_0002'] = [{
+            x: 40,
+            y: 2.5,
+            z: 20
+        }];
     }
 
     buildTempBuildings() {
