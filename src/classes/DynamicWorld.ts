@@ -40,11 +40,6 @@ export default class DynamicWorld {
             y: 3,
             z: 220
         }];
-        this.initialObjectData['truck_0001'] = [{
-            x: -10,
-            y: 2,
-            z: 20
-        }];
         this.initialObjectData['car_0001'] = [{
             x: 20,
             y: 2.5,
@@ -52,6 +47,11 @@ export default class DynamicWorld {
         }];
         this.initialObjectData['car_0002'] = [{
             x: 40,
+            y: 2.5,
+            z: 20
+        }];
+        this.initialObjectData['bus_0001'] = [{
+            x: 60,
             y: 2.5,
             z: 20
         }];
