@@ -124,7 +124,7 @@ export default class Vehicle {
             return;
         }
 
-        let strength = 0.2 * deltaTime;
+        let strength = 0.2 * deltaTime * this.dynamicObject.manifest.acceleration || 1;
         const backStrength = 0.3 * strength;
         let rotateStrength = 0.002 * deltaTime;
         const rollStrength = rotateStrength;
