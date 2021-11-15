@@ -4,6 +4,7 @@ import Vehicle from './Vehicle';
 import DynamicWorld from './DynamicWorld';
 import FrameUpdater from './FrameUpdater';
 import ActivePlayer from './ActivePlayer';
+import Hermes from './hermes/Hermes.ts';
 import * as CANNON from 'cannon';
 
 window.CANNON = CANNON;
@@ -16,7 +17,9 @@ export default class OSDApp {
     cameraGoal: BABYLON.Mesh;
     cameraCurrent: BABYLON.Mesh;
     dynamicWorld: DynamicWorld;
+    hermes: Hermes;
     player: ActivePlayer = null;
+
 
     constructor() {
         window['_osdapp'] = this;
@@ -35,6 +38,7 @@ export default class OSDApp {
         this.resize();
         this.dynamicWorld = new DynamicWorld(this);
         this.dynamicWorld.load();
+        this.hermes = new Hermes();
     }
 
     update() {
@@ -69,7 +73,7 @@ export default class OSDApp {
         const targetRotation = this.cameraGoal.absoluteRotationQuaternion;
         const currentRotation = this.cameraCurrent.absoluteRotationQuaternion;
 
-        const factor = 1.0 - Math.min(Math.max(deltaTime * 0.005, 0.0), 1.0);
+        const factor = 1.0 - Math.min(Math.max(deltaTime * 0.03, 0.0), 1.0);
         const rotationFactor = 0.06 * factor;
         this.cameraCurrent.position =
             targetPosition.scale(1.0 - factor).add(currentPosition.scale(factor));
