@@ -74,7 +74,7 @@ export default class OSDApp {
         const currentRotation = this.cameraCurrent.absoluteRotationQuaternion;
 
         const factor = 1.0 - Math.min(Math.max(deltaTime * 0.03, 0.0), 1.0);
-        const rotationFactor = 0.06 * factor;
+        const rotationFactor = 0.2 * factor;
         this.cameraCurrent.position =
             targetPosition.scale(1.0 - factor).add(currentPosition.scale(factor));
         this.cameraCurrent.rotationQuaternion = BABYLON.Quaternion.Slerp(this.cameraCurrent.absoluteRotationQuaternion, targetRotation, rotationFactor);
