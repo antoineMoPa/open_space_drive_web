@@ -1,9 +1,9 @@
 import * as BABYLON from 'babylonjs';
 import 'babylonjs-loaders';
-import Vehicle from './Vehicle';
-import DynamicWorld from './DynamicWorld';
+import Vehicle from './DynamicWorld/Vehicle';
+import DynamicWorld from './DynamicWorld/DynamicWorld';
 import FrameUpdater from './FrameUpdater';
-import ActivePlayer from './ActivePlayer';
+import ActivePlayer from './DynamicWorld/ActivePlayer';
 import Hermes from './hermes/Hermes.ts';
 import * as CANNON from 'cannon';
 
@@ -59,7 +59,6 @@ export default class OSDApp {
         this.camera = new BABYLON.UniversalCamera('camera', new BABYLON.Vector3(0, 0, 0), this.scene);
 
         this.cameraGoal.position.z += 30;
-        this.cameraGoal.position.y += 4;
         this.cameraGoal.rotation.y -= Math.PI;
 
         this.camera.parent = this.cameraCurrent;
@@ -68,6 +67,9 @@ export default class OSDApp {
     }
 
     updateCamera(deltaTime) {
+        const yOffset = this.player?.vehicle?.dynamicObject.manifest.cameraYOffset || 4;
+        this.cameraGoal.position.y = yOffset;
+
         const targetPosition = this.cameraGoal.getAbsolutePosition();
         const currentPosition = this.cameraCurrent.getAbsolutePosition();
         const targetRotation = this.cameraGoal.absoluteRotationQuaternion;

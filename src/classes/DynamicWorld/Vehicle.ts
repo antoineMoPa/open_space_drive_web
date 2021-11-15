@@ -1,11 +1,13 @@
 import * as BABYLON from 'babylonjs';
-import FrameUpdater from './FrameUpdater';
+
+import FrameUpdater from '../FrameUpdater';
 
 export default class Vehicle {
-    private app;
+    protected app;
     public dynamicObject;
-    private watchedKeyCodes;
-    private trailer: null;
+    protected watchedKeyCodes;
+    private trailer = null;
+    private trailerJoint = null;
     private frameUpdater = null;
     private observers: any[] = [];
 
@@ -14,6 +16,18 @@ export default class Vehicle {
         this.dynamicObject = dynamicObject;
 
         this.frameUpdater = FrameUpdater.addUpdater(this.update.bind(this));
+
+        this.watchedKeyCodes = {
+            'KeyS': false,
+            'ArrowDown': false,
+            'KeyW': false,
+            'ArrowUp': false,
+            'KeyA': false,
+            'ArrowLeft': false,
+            'KeyD': false,
+            'Shift': false,
+            'ArrowRight': false
+        };
     }
 
     playerExit() {
@@ -46,44 +60,29 @@ export default class Vehicle {
         }
     }
 
+    observeKeyboard(kbInfo, deltaTime) {
+        const code = kbInfo.event.code.toString();
+
+        if ('Shift' in this.watchedKeyCodes) {
+            this.watchedKeyCodes['Shift'] = kbInfo.event.shiftKey;
+        }
+        if (code === 'KeyJ' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
+            this.joinTrailer();
+        }
+
+        if (!(code in this.watchedKeyCodes)) {
+            return;
+        }
+
+        if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYDOWN) {
+            this.watchedKeyCodes[code] = true;
+        } else if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYUP) {
+            this.watchedKeyCodes[code] = false;
+        }
+    }
+
     private listenKeyboard() {
-        this.watchedKeyCodes = {
-            'KeyS': false,
-            'ArrowDown': false,
-            'KeyW': false,
-            'ArrowUp': false,
-            'KeyA': false,
-            'ArrowLeft': false,
-            'KeyD': false,
-            'Shift': false,
-            'ArrowRight': false
-        };
-
-
-        this.observers.push(this.app.scene.onKeyboardObservable.add((kbInfo) => {
-            const code = kbInfo.event.code.toString();
-
-            if ('Shift' in this.watchedKeyCodes) {
-                this.watchedKeyCodes['Shift'] = kbInfo.event.shiftKey;
-            }
-
-            if (!(code in this.watchedKeyCodes)) {
-                return;
-            }
-
-            if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYDOWN) {
-                this.watchedKeyCodes[code] = true;
-            } else if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYUP) {
-                this.watchedKeyCodes[code] = false;
-            }
-        }));
-
-        this.observers.push(this.app.scene.onKeyboardObservable.add((kbInfo) => {
-            const code = kbInfo.event.code.toString();
-            if (code === 'KeyJ' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
-                this.joinTrailer();
-            }
-        }));
+        this.observers.push(this.app.scene.onKeyboardObservable.add(this.observeKeyboard.bind(this)));
     }
 
     private clearListenKeyboard() {
@@ -93,13 +92,19 @@ export default class Vehicle {
     }
 
     joinTrailer() {
-        if (this.trailer) {
-            return;
-        }
-
+        const model = this.dynamicObject.physicsModel;
         const trailer = (this.app.dynamicWorld
             .allDynamicObjects as any)
             .filter(obj => (obj as any).manifest.isTrailer)[0];
+        const trailerImpostor = ((trailer as any).model as any).physicsImpostor;
+
+        if (this.trailer) {
+            this.app.scene.getPhysicsEngine().removeJoint(model.physicsImpostor, trailerImpostor, this.trailerJoint);
+            this.trailer = null;
+            this.trailerJoint = null;
+            return;
+        }
+
         const joint = new BABYLON.PhysicsJoint(
             BABYLON.PhysicsJoint.BallAndSocketJoint, {
                 mainAxis: new BABYLON.Vector3(0,1,0),
@@ -108,11 +113,11 @@ export default class Vehicle {
                 connectedPivot: new BABYLON.Vector3(0,0,-10),
             });
 
-        const model = this.dynamicObject.physicsModel;
         model.position.scale(0);
-        model.physicsImpostor.addJoint(((trailer as any).model as any).physicsImpostor, joint);
+        model.physicsImpostor.addJoint(trailerImpostor, joint);
 
         this.trailer = trailer;
+        this.trailerJoint = joint;
     }
 
     private get isPlayerDriving() {
@@ -124,9 +129,9 @@ export default class Vehicle {
             return;
         }
 
-        let strength = 0.2 * deltaTime * this.dynamicObject.manifest.acceleration || 1;
+        let strength = 0.2 * deltaTime * (this.dynamicObject.manifest.acceleration || 1);
         const backStrength = 0.3 * strength;
-        let rotateStrength = 0.002 * deltaTime;
+        let rotateStrength = 0.002 * deltaTime * (this.dynamicObject.manifest.rotationAcceleration || 1);
         const rollStrength = rotateStrength;
 
         if (this.trailer) {

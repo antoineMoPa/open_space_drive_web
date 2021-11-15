@@ -1,8 +1,11 @@
 import * as BABYLON from 'babylonjs';
+
+import FrameUpdater from '../FrameUpdater';
+import OSDApp from '../OSDApp';
+
 import PackedObject from './PackedObject';
-import FrameUpdater from './FrameUpdater';
 import DynamicObject from './DynamicObject';
-import OSDApp from './OSDApp';
+
 
 export default class BabylonPackedObjectReader {
     scene: BABYLON.Scene;

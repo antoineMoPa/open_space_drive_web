@@ -39,23 +39,9 @@ export default class ActivePlayer extends Player {
         this.app.scene.onKeyboardObservable.add((kbInfo) => {
             const code = kbInfo.event.code.toString();
 
-            if (!(code in this.watchedKeyCodes)) {
-                return;
-            }
-
             if ('Shift' in this.watchedKeyCodes) {
                 this.watchedKeyCodes['Shift'] = kbInfo.event.shiftKey;
             }
-
-            if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYDOWN) {
-                this.watchedKeyCodes[code] = true;
-            } else if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYUP) {
-                this.watchedKeyCodes[code] = false;
-            }
-        });
-
-        this.app.scene.onKeyboardObservable.add((kbInfo) => {
-            const code = kbInfo.event.code.toString();
             if (code === 'KeyF' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
                 this.enterExitVehicle();
             }
@@ -63,6 +49,14 @@ export default class ActivePlayer extends Player {
                 if (!this.isInVehicle) {
                     this.jump();
                 }
+            }
+            if (!(code in this.watchedKeyCodes)) {
+                return;
+            }
+            if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYDOWN) {
+                this.watchedKeyCodes[code] = true;
+            } else if (kbInfo.type == BABYLON.KeyboardEventTypes.KEYUP) {
+                this.watchedKeyCodes[code] = false;
             }
         });
     }

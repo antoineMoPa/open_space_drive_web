@@ -2,8 +2,9 @@
     "hasCustomShader": false,
     "isStaticObject": false,
     "hasCollisions": true,
-    "isVehicle": true,
-    "mass": 8000,
+    "isRoadRig": true,
+    "cameraYOffset": 10,
+    "mass": 3000,
     "acceleration": 0.1,
-    "rotationAcceleration": 0.4
+    "rotationAcceleration": 0.2
 }

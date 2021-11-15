@@ -3,6 +3,7 @@ import BabylonPackedObjectReader from './BabylonPackedObjectReader';
 import OSDApp from './OSDApp';
 import makeCollisions from './CollisionObject';
 import Vehicle from './Vehicle';
+import RoadRig from './RoadRig';
 import ActivePlayer from './ActivePlayer';
 
 export default class DynamicWorld {
@@ -40,7 +41,7 @@ export default class DynamicWorld {
             y: 3,
             z: 220
         }];
-        this.initialObjectData['car_0001'] = [{
+        this.initialObjectData['road_rig_0001'] = [{
             x: 20,
             y: 2.5,
             z: 20
@@ -55,6 +56,12 @@ export default class DynamicWorld {
             y: 2.5,
             z: 20
         }];
+        this.initialObjectData['car_0001'] = [{
+            x: 80,
+            y: 2.5,
+            z: 20
+        }];
+
     }
 
     buildTempBuildings() {
@@ -155,6 +162,9 @@ export default class DynamicWorld {
 
             if (manifest.isVehicle) {
                 this.allVehicles.push(new Vehicle(app, dynamicObject));
+            }
+            if (manifest.isRoadRig) {
+                this.allVehicles.push(new RoadRig(app, dynamicObject));
             }
             if (parameters.rotateY) {
                 model.rotation.y = parameters.rotateY;

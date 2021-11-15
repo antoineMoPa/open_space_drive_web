@@ -1,9 +1,11 @@
 import * as BABYLON from 'babylonjs';
-import OSDApp from './OSDApp';
+
+import OSDApp from '../OSDApp';
+import FrameUpdater from '../FrameUpdater';
+
 import Vehicle from './Vehicle';
 import makeCollisions from './CollisionObject';
 import DynamicObject from './DynamicObject';
-import FrameUpdater from './FrameUpdater';
 
 export default class Player {
     app: OSDApp
