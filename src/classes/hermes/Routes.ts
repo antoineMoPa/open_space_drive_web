@@ -3,14 +3,19 @@ import Hermes from './Hermes';
 
 export default class Routes {
     protected hermes: Hermes = null;
+    private customMeshes: BABYLON.Mesh[] = [];
 
     constructor(hermes: Hermes) {
         this.hermes = hermes;
         this.update();
     }
 
-    buildRoadSegment({x1,y1,z1,x2,y2,z2}) {
-
+    buildRoadSegment({x1,y1,z1,x2,y2,z2,upX,upY,upZ}): BABYLON.VertexData {
+        const vertexData = new BABYLON.VertexData();
+        vertexData.positions = [x1, y1, z1, x2, y2, z2,
+                                x1, y1, z1, x1 + upX, y1 + upY, z1 + upZ];
+        vertexData.indices = [0, 1, 2, 3];
+        return vertexData;
     }
 
     deleteAll() {
@@ -24,7 +29,9 @@ export default class Routes {
         let results = db.exec("SELECT x1,y1,z1,x2,y2,z2,upX,upY,upZ FROM road_segment ORDER BY id");
 
         const scene = this.hermes.app.scene;
-        const customMesh = new BABYLON.Mesh("road", scene);
+        this.customMeshes.forEach(mesh => mesh.dispose());
+        this.customMeshes = [];
+
         const roadMaterial = new BABYLON.StandardMaterial("road", scene);
         roadMaterial.wireframe = true;
         let offset = 0;
@@ -40,11 +47,9 @@ export default class Routes {
             customMesh.material = roadMaterial;
 
             const [x1,y1,z1,x2,y2,z2,upX,upY,upZ] = row;
-            const vertexData = new BABYLON.VertexData();
-            vertexData.positions = [x1, y1, z1, x2, y2, z2,
-                                    x1, y1, z1, x1 + upX, y1 + upY, z1 + upZ];
-            vertexData.indices = [0, 1, 2, 3];
+            const vertexData = this.buildRoadSegment({x1,y1,z1,x2,y2,z2,upX,upY,upZ});
             vertexData.applyToMesh(customMesh);
+            this.customMeshes.push(customMesh);
         });
     };
 
