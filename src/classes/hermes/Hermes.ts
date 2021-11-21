@@ -1,15 +1,18 @@
 import DB from '../db';
 import Routes from './Routes';
+import OSDApp from '../OSDApp';
 
 /**
  * Hermes: Road maps & routing
  */
 export default class Hermes {
-    db: DB = null;
+    db: any = null;
     routes: Routes = null;
+    app: OSDApp = null;
 
-    constructor() {
-        window._hermes = this;
+    constructor(app: OSDApp) {
+        (window as any)._hermes = this;
+        this.app = app;
         this.init();
     }
 

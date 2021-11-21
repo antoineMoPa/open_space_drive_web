@@ -1,7 +1,7 @@
 export default class DB {
     static async db() {
-        if (!window._osdDB) {
-            const sqlPromise = await initSqlJs({
+        if (!(window as any)._osdDB) {
+            const sqlPromise = await (window as any).initSqlJs({
                 locateFile: file => `./node_modules/sql.js/dist/${file}`
             });
 
@@ -9,9 +9,9 @@ export default class DB {
             const [SQL, buf] = await Promise.all([sqlPromise, dataPromise]);
             const db = new SQL.Database(new Uint8Array(buf));
 
-            window._osdDB = db;
+            (window as any)._osdDB = db;
         }
 
-        return window._osdDB;
+        return (window as any)._osdDB;
     }
 }

@@ -4,7 +4,7 @@ import Vehicle from './DynamicWorld/Vehicle';
 import DynamicWorld from './DynamicWorld/DynamicWorld';
 import FrameUpdater from './FrameUpdater';
 import ActivePlayer from './DynamicWorld/ActivePlayer';
-import Hermes from './hermes/Hermes.ts';
+import Hermes from './hermes/Hermes';
 import * as CANNON from 'cannon';
 
 window.CANNON = CANNON;
@@ -38,7 +38,7 @@ export default class OSDApp {
         this.resize();
         this.dynamicWorld = new DynamicWorld(this);
         this.dynamicWorld.load();
-        this.hermes = new Hermes();
+        this.hermes = new Hermes(this);
     }
 
     update() {
