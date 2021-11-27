@@ -112,14 +112,14 @@ export default class Routes {
 
     deleteAll() {
         const db = this.hermes.db;
-        let results = db.exec("DELETE FROM road_segment");
+        let results = db.exec("DELETE FROM old_road_segment; DELETE FROM road_segment; DELETE FROM road_points;");
         this.update();
     }
 
     update() {
         const db = this.hermes.db;
         const start = this.lastDrawnRouteId;
-        let results = db.exec(`SELECT x1,y1,z1,x2,y2,z2,upX,upY,upZ,id FROM road_segment WHERE id > ${start - 1} ORDER BY id`);
+        let results = db.exec(`SELECT x1,y1,z1,x2,y2,z2,upX,upY,upZ,id FROM old_road_segment WHERE id > ${start - 1} ORDER BY id`);
 
         if (!results[0]) {
             return;
@@ -174,7 +174,7 @@ export default class Routes {
         const fields = Object.keys(fieldMap);
         const values = Object.keys(fieldMap).map(key => fieldMap[key]);
         let stmt = db.exec(
-            `INSERT INTO road_segment (${fields.join(',')}) VALUES (${values.join(',')})`
+            `INSERT INTO old_road_segment (${fields.join(',')}) VALUES (${values.join(',')})`
         );
         this.update();
     }
