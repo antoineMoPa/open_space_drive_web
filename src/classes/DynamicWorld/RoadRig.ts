@@ -22,7 +22,9 @@ export default class RoadRig extends Vehicle {
         if (this.currentSegmentPoints.length == 2) {
             this.app.hermes.routes.addSegment({
                 point1ID: this.currentSegmentPoints[0],
-                point2ID: this.currentSegmentPoints[1]
+                point2ID: this.currentSegmentPoints[1],
+                has_left_wall: true,
+                has_right_wall: true
             });
             this.currentSegmentPoints.shift();
         }

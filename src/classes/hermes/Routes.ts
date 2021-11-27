@@ -11,7 +11,7 @@ export default class Routes {
         this.update();
     }
 
-    buildRoadSegment(point1, point2): BABYLON.Mesh[] {
+    buildRoadSegment(point1, point2, { has_left_wall, has_right_wall }): BABYLON.Mesh[] {
         const {up, p, forward, right} = (point1);
         const p2Up = point2.up;
         const p2Forward = point2.forward;
@@ -39,10 +39,10 @@ export default class Routes {
         //    (this will facilitate makin highway exits)
 
         const getRoadProfile = ({p, up, forward, right}) => {
-            const road_width = 10;
-            const road_height = 4;
-            const fence_width = 2;
-            const fence_height = 6;
+            const road_width = 20;
+            const road_height = 1;
+            const fence_width = 0.6;
+            const fence_height = 1.7;
 
             const p3 = p.add(right.scale(-road_width/2).add(up.scale(road_height/2)));
             const p4 = p3.add(right.scale(road_width));
@@ -55,7 +55,19 @@ export default class Routes {
             const p12 = p4.add(up.scale(fence_height));
             const p11 = p10.add(up.scale(fence_height));
 
-            return [p3, p4, p6, p5, p3, p3];
+            const shape = [p3];
+
+            if (has_left_wall) {
+                shape.push(p8, p9, p7)
+            }
+
+            if (false&&has_right_wall) {
+                shape.push(p10, p11, p12)
+            }
+
+            shape.push(p4, p6, p5, p3, p3);
+
+            return shape;
         }
 
         const vertexData = new BABYLON.VertexData();
@@ -92,11 +104,11 @@ export default class Routes {
 
             const face = [
                 i,
+                i + 1 + l,
                 i + l,
-                i + 1 + l,
                 i,
-                i + 1 + l,
                 i + 1,
+                i + 1 + l,
             ];
 
             indices.push(...face);
@@ -164,7 +176,9 @@ SELECT
     point_2.upZ as up2Z,
     point_2.forwardX as forward2X,
     point_2.forwardY as forward2Y,
-    point_2.forwardZ as forward2Z
+    point_2.forwardZ as forward2Z,
+    road_segment.has_left_wall as has_left_wall,
+    road_segment.has_right_wall as has_right_wall
 FROM
     road_segment
 INNER JOIN
@@ -203,21 +217,24 @@ AND  road_segment.point_2 = point_2.id`);
                 up2Z,
                 forward2X,
                 forward2Y,
-                forward2Z
+                forward2Z,
+                has_left_wall,
+                has_right_wall,
             ] = row;
 
             const p1 = new BABYLON.Vector3(x1, y1, z1);
             const up1 = new BABYLON.Vector3(up1X,  up1Y, up1Z);
             const forward1 = new BABYLON.Vector3(forward1X,  forward1Y, forward1Z);
-            const right1 = up1.cross(forward1).normalize();
+            const right1 = forward1.cross(up1).normalize();
             const p2 = new BABYLON.Vector3(x2, y2, z2);
             const up2 = new BABYLON.Vector3(up2X,  up2Y, up2Z);
             const forward2 = new BABYLON.Vector3(forward2X,  forward2Y, forward2Z);
-            const right2 = up2.cross(forward2).normalize();
+            const right2 = forward2.cross(up2).normalize();
 
             const mesh = this.buildRoadSegment(
                 {up: up1, p: p1, forward: forward1, right: right1},
-                {up: up2, p: p2, forward: forward2, right: right2}
+                {up: up2, p: p2, forward: forward2, right: right2},
+                {has_left_wall, has_right_wall}
             );
             this.customMeshes.push(...mesh);
         });
@@ -251,10 +268,10 @@ AND  road_segment.point_2 = point_2.id`);
         return results[0].values[0][0];
     }
 
-    addSegment({point1ID, point2ID}) {
+    addSegment({point1ID, point2ID, has_left_wall, has_right_wall}) {
         const db = this.hermes.db;
         let stmt = db.exec(
-            `INSERT INTO road_segment (point_1, point_2) VALUES (${point1ID}, ${point2ID})`
+            `INSERT INTO road_segment (point_1, point_2, has_left_wall, has_right_wall) VALUES (${point1ID}, ${point2ID}, ${has_left_wall}, ${has_right_wall})`
         );
         this.update();
     }
