@@ -2,24 +2,34 @@ import * as BABYLON from 'babylonjs';
 import Vehicle from './Vehicle';
 
 export default class RoadRig extends Vehicle {
-    last: BABYLON.Vector3 = null;
+    currentSegmentPoints = [];
 
     constructor(app, dynamicObject) {
         super(app, dynamicObject);
         this.watchedKeyCodes['Space'] = false;
     }
 
-    insertRoad() {
-        const position = this.dynamicObject.physicsModel.position;
+    addPoint() {
+        const model = this.dynamicObject.physicsModel;
+        const newPointId = this.app.hermes.routes.addPoint({
+            point: model.position.clone(),
+            up: model.up.clone(),
+            forward: model.forward.clone()
+        });
 
-        if (this.last !== null) {
-            this.app.hermes.routes.add({
-                point1: this.last.clone(),
-                point2: position.clone(),
-                up: this.dynamicObject.physicsModel.up.clone()
+        this.currentSegmentPoints.push(newPointId);
+
+        if (this.currentSegmentPoints.length == 2) {
+            this.app.hermes.routes.addSegment({
+                point1ID: this.currentSegmentPoints[0],
+                point2ID: this.currentSegmentPoints[1]
             });
+            this.currentSegmentPoints.shift();
         }
-        this.last = position.clone();
+
+        if (this.currentSegmentPoints.length > 2) {
+            throw new Error('Should never happen.');
+        }
     }
 
     observeKeyboard(kbInfo, deltaTime) {
@@ -28,7 +38,7 @@ export default class RoadRig extends Vehicle {
         const code = kbInfo.event.code.toString();
 
         if (code === 'Space' && kbInfo.type === BABYLON.KeyboardEventTypes.KEYUP) {
-            this.insertRoad();
+            this.addPoint();
         }
     }
 }

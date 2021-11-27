@@ -11,12 +11,12 @@ export default class Routes {
         this.update();
     }
 
-    buildRoadSegment(specs, nextSpecs): BABYLON.Mesh[] {
-        const {up, p1, forward, right} = (specs);
-        const nextUp = nextSpecs.up;
-        const nextForward = nextSpecs.forward;
-        const nextRight = nextSpecs.right;
-        const p2 = nextSpecs.p1;
+    buildRoadSegment(point1, point2): BABYLON.Mesh[] {
+        const {up, p, forward, right} = (point1);
+        const p2Up = point2.up;
+        const p2Forward = point2.forward;
+        const p2Right = point2.right;
+        const p2 = point2.p;
 
         const scene = this.hermes.app.scene;
         const lineMesh = new BABYLON.Mesh("road", scene);
@@ -38,13 +38,13 @@ export default class Routes {
         //    TODO, implement the shape above, both blocks at the side removable with an option
         //    (this will facilitate makin highway exits)
 
-        const getRoadProfile = ({p1, up, forward, right}) => {
+        const getRoadProfile = ({p, up, forward, right}) => {
             const road_width = 10;
             const road_height = 4;
             const fence_width = 2;
             const fence_height = 6;
 
-            const p3 = p1.add(right.scale(-road_width/2).add(up.scale(road_height/2)));
+            const p3 = p.add(right.scale(-road_width/2).add(up.scale(road_height/2)));
             const p4 = p3.add(right.scale(road_width));
             const p5 = p3.add(up.scale(-road_height));
             const p6 = p5.add(right.scale(road_width));
@@ -60,8 +60,8 @@ export default class Routes {
 
         const vertexData = new BABYLON.VertexData();
 
-        const points1 = getRoadProfile({p1, forward, right, up});
-        const points2 = getRoadProfile({p1: p2, forward: nextForward, right: nextRight, up: nextUp});
+        const points1 = getRoadProfile({p, forward, right, up});
+        const points2 = getRoadProfile({p: p2, forward: p2Forward, right: p2Right, up: p2Up});
         const positions = [];
 
         if (points1.length !== points2.length) {
@@ -92,11 +92,11 @@ export default class Routes {
 
             const face = [
                 i,
-                i + 1 + l,
                 i + l,
+                i + 1 + l,
                 i,
+                i + 1 + l,
                 i + 1,
-                i + 1 + l
             ];
 
             indices.push(...face);
@@ -116,65 +116,145 @@ export default class Routes {
         this.update();
     }
 
-    update() {
+    getSegments() {
         const db = this.hermes.db;
         const start = this.lastDrawnRouteId;
-        let results = db.exec(`SELECT x1,y1,z1,x2,y2,z2,upX,upY,upZ,id FROM old_road_segment WHERE id > ${start - 1} ORDER BY id`);
 
-        if (!results[0]) {
-            return;
+        let roadResults = db.exec(`SELECT id, point_1, point_2 FROM road_segment WHERE id > ${start - 1} ORDER BY id`);
+
+        if (!roadResults[0]) {
+            return [];
         }
 
-        let allSpecs = [];
+        return roadResults[0].values;
+    }
 
-        results[0].values.forEach((row) => {
-            const positions = [];
-            const indices = [];
+    getPoints() {
+        const db = this.hermes.db;
 
-            const [x1, y1, z1, x2, y2, z2, upX, upY, upZ, id] = row;
-            const up = new BABYLON.Vector3(upX,  upY, upZ);
+        let pointsResults = db.exec(`SELECT id,x,y,z,upX,upY,upZ,forwardX,forwardY,forwardZ FROM road_point ORDER BY id`);
+
+        if (!pointsResults[0]) {
+            return [];
+        }
+
+        return pointsResults[0].values;
+    }
+
+    getSegmentsAndPoints() {
+        const db = this.hermes.db;
+
+        let pointsResults = db.exec(
+            `
+SELECT
+    point_1.x as x1,
+    point_1.y as y1,
+    point_1.z as z1,
+    point_1.upX as up1X,
+    point_1.upY as up1Y,
+    point_1.upZ as up1Z,
+    point_1.forwardX as forward1X,
+    point_1.forwardY as forward1Y,
+    point_1.forwardZ as forward1Z,
+    point_2.x as x2,
+    point_2.y as y2,
+    point_2.z as z2,
+    point_2.upX as up2X,
+    point_2.upY as up2Y,
+    point_2.upZ as up2Z,
+    point_2.forwardX as forward2X,
+    point_2.forwardY as forward2Y,
+    point_2.forwardZ as forward2Z
+FROM
+    road_segment
+INNER JOIN
+    road_point as point_1,
+    road_point as point_2
+ON road_segment.point_1 = point_1.id
+AND  road_segment.point_2 = point_2.id`);
+
+        if (!pointsResults[0]) {
+            return [];
+        }
+
+        return pointsResults[0].values;
+    }
+
+
+    update() {
+        const segmentsAndPoints = this.getSegmentsAndPoints();
+
+        segmentsAndPoints.forEach((row) => {
+            const [
+                x1,
+                y1,
+                z1,
+                up1X,
+                up1Y,
+                up1Z,
+                forward1X,
+                forward1Y,
+                forward1Z,
+                x2,
+                y2,
+                z2,
+                up2X,
+                up2Y,
+                up2Z,
+                forward2X,
+                forward2Y,
+                forward2Z
+            ] = row;
+
             const p1 = new BABYLON.Vector3(x1, y1, z1);
+            const up1 = new BABYLON.Vector3(up1X,  up1Y, up1Z);
+            const forward1 = new BABYLON.Vector3(forward1X,  forward1Y, forward1Z);
+            const right1 = up1.cross(forward1).normalize();
             const p2 = new BABYLON.Vector3(x2, y2, z2);
-            const forward = p2.subtract(p1);
-            const right = up.cross(forward).normalize();
+            const up2 = new BABYLON.Vector3(up2X,  up2Y, up2Z);
+            const forward2 = new BABYLON.Vector3(forward2X,  forward2Y, forward2Z);
+            const right2 = up2.cross(forward2).normalize();
 
-            allSpecs.push({p1, p2, forward, up, right, id});
+            const mesh = this.buildRoadSegment(
+                {up: up1, p: p1, forward: forward1, right: right1},
+                {up: up2, p: p2, forward: forward2, right: right2}
+            );
+            this.customMeshes.push(...mesh);
         });
-
-        let previousSpecs = null;
-
-        // If we ever need to destroy all current roads, this is how we would proceed:
-        // this.customMeshes.forEach(mesh => mesh.dispose());
-        this.customMeshes = [];
-
-        allSpecs.forEach(specs => {
-            if (previousSpecs) {
-                previousSpecs.p2 = specs.p1;
-                const mesh = this.buildRoadSegment(previousSpecs, specs);
-                this.customMeshes.push(...mesh);
-            }
-            previousSpecs = specs;
-            this.lastDrawnRouteId = specs.id;
-        })
     };
 
-    add({point1, point2, up}) {
+    /**
+     * Adds a point to road_point table.
+     * returns the added point id.
+     */
+    addPoint({point, up, forward}): number {
         const db = this.hermes.db;
         const fieldMap = {
-            'x1': point1.x,
-            'y1': point1.y,
-            'z1': point1.z,
-            'x2': point2.x,
-            'y2': point2.y,
-            'z2': point2.z,
+            'x': point.x,
+            'y': point.y,
+            'z': point.z,
             'upX': up.x,
             'upY': up.y,
-            'upZ': up.z
+            'upZ': up.z,
+            'forwardX': forward.x,
+            'forwardY': forward.y,
+            'forwardZ': forward.z,
         };
         const fields = Object.keys(fieldMap);
         const values = Object.keys(fieldMap).map(key => fieldMap[key]);
         let stmt = db.exec(
-            `INSERT INTO old_road_segment (${fields.join(',')}) VALUES (${values.join(',')})`
+            `INSERT INTO road_point (${fields.join(',')}) VALUES (${values.join(',')})`
+        );
+
+        let results = db.exec(`SELECT id FROM road_point ORDER BY id DESC LIMIT 1`);
+
+        return results[0].values[0][0];
+    }
+
+    addSegment({point1ID, point2ID}) {
+        const db = this.hermes.db;
+        let stmt = db.exec(
+            `INSERT INTO road_segment (point_1, point_2) VALUES (${point1ID}, ${point2ID})`
         );
         this.update();
     }
