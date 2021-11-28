@@ -70,7 +70,6 @@ export default class ActivePlayer extends Player {
         this.model.physicsImpostor.setLinearVelocity(velocity.add(globalVelocityOffset));
         this.model.rotationQuaternion.w = 1;
         this.model.rotationQuaternion.x = 0;
-        this.model.rotationQuaternion.y = 0;
         this.model.rotationQuaternion.z = 0;
     }
 
