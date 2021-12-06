@@ -1,4 +1,5 @@
 import * as BABYLON from 'babylonjs';
+import 'babylonjs-loaders';
 
 import FrameUpdater from '../FrameUpdater';
 import OSDApp from '../OSDApp';

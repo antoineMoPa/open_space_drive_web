@@ -1,6 +1,6 @@
 import * as BABYLON from 'babylonjs';
 import BabylonPackedObjectReader from './BabylonPackedObjectReader';
-import OSDApp from './OSDApp';
+import OSDApp from '../OSDApp';
 import makeCollisions from './CollisionObject';
 import Vehicle from './Vehicle';
 import RoadRig from './RoadRig';
@@ -149,7 +149,7 @@ export default class DynamicWorld {
                 dynamicObject.poseModel.parent.parent = model;
                 app.player = new ActivePlayer(app, dynamicObject);
                 this.app.player.model = model;
-                this.app.player.dynamicObject = dynamicObject;
+                (this.app.player.dynamicObject as any) = dynamicObject;
             }
 
             model.position.x += x;

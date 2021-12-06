@@ -11,8 +11,8 @@
         "assets:build": "node scripts/buildAssets.js"
     },
     "dependencies": {
-        "babylonjs": "^4.2.0",
-        "babylonjs-loaders": "^4.2.0",
+        "babylonjs": "file:../Babylon.js/dist/preview release/",
+        "babylonjs-loaders": "file:../Babylon.js/dist/preview release/loaders/",
         "cannon": "^0.6.2",
         "commonjs": "^0.0.1",
         "crypto": "^1.0.1",

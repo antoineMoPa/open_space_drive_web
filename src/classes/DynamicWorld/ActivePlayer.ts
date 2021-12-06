@@ -1,7 +1,7 @@
 import * as BABYLON from 'babylonjs';
 import Vehicle from './Vehicle';
 import Player from './Player';
-import OSDApp from './OSDApp';
+import OSDApp from '../OSDApp';
 
 export default class ActivePlayer extends Player {
     _playerVehicle: Vehicle;

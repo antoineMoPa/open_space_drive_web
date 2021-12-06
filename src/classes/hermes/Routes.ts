@@ -1,5 +1,6 @@
 import * as BABYLON from 'babylonjs';
 import Hermes from './Hermes';
+import * as CANNON from 'cannon';
 
 export default class Routes {
     protected hermes: Hermes = null;
@@ -11,7 +12,7 @@ export default class Routes {
         this.update();
     }
 
-    buildRoadSegment(point1, point2, { has_left_wall, has_right_wall }): BABYLON.Mesh[] {
+    buildRoadSegment(point1, point2, { id, has_left_wall, has_right_wall }): BABYLON.Mesh[] {
         const {up, p, forward, right} = (point1);
         const p2Up = point2.up;
         const p2Forward = point2.forward;
@@ -19,11 +20,9 @@ export default class Routes {
         const p2 = point2.p;
 
         const scene = this.hermes.app.scene;
-        const lineMesh = new BABYLON.Mesh("road", scene);
-        const lineMaterial = new BABYLON.StandardMaterial("road", scene);
-        // lineMaterial.wireframe = true;
-        lineMesh.material = lineMaterial;
-
+        let meshes = [];
+        let physicsShapes = [];
+        const roadMaterial = new BABYLON.StandardMaterial("road", scene);
 
         //
         //                |------------ fence width  -------------|
@@ -35,14 +34,14 @@ export default class Routes {
         //                |  p7               . p1  ----> right   |        | road height
         //            p5  |_______________________________________|  p6    _
         //
-        //    TODO, implement the shape above, both blocks at the side removable with an option
-        //    (this will facilitate makin highway exits)
 
+        // Builds an array of shapes to build (road + walls)
         const getRoadProfile = ({p, up, forward, right}) => {
-            const road_width = 20;
-            const road_height = 1;
-            const fence_width = 0.6;
-            const fence_height = 1.7;
+            let shapes = [];
+            const road_width = 40;
+            const road_height = 1.5;
+            const fence_width = 1.0;
+            const fence_height = 5.0;
 
             const p3 = p.add(right.scale(-road_width/2).add(up.scale(road_height/2)));
             const p4 = p3.add(right.scale(road_width));
@@ -55,71 +54,96 @@ export default class Routes {
             const p12 = p4.add(up.scale(fence_height));
             const p11 = p10.add(up.scale(fence_height));
 
-            const shape = [p3];
+            const roadShape = [p3, p4, p6, p5];
+            shapes.push([roadShape]);
 
             if (has_left_wall) {
-                shape.push(p8, p9, p7)
+                const wall_shape = [p3, p8, p9, p7];
+                shapes.push([wall_shape]);
             }
 
-            if (false&&has_right_wall) {
-                shape.push(p10, p11, p12)
+            if (has_right_wall) {
+                const wall_shape = [p10, p11, p12, p4];
+                shapes.push([wall_shape]);
             }
 
-            shape.push(p4, p6, p5, p3, p3);
-
-            return shape;
+            return shapes;
         }
 
-        const vertexData = new BABYLON.VertexData();
+        const bodies1 = getRoadProfile({p, forward, right, up});
+        const bodies2 = getRoadProfile({p: p2, forward: p2Forward, right: p2Right, up: p2Up});
 
-        const points1 = getRoadProfile({p, forward, right, up});
-        const points2 = getRoadProfile({p: p2, forward: p2Forward, right: p2Right, up: p2Up});
-        const positions = [];
+        bodies1.forEach((_, index) => {
+            let offset = 0;
+            const shape1 = bodies1[index];
+            const shape2 = bodies2[index];
 
-        if (points1.length !== points2.length) {
-            throw new Error('Vertices number must be equal!');
-        }
+            if (shape1.length !== shape2.length) {
+                throw new Error('Shape number must be equal!');
+            }
 
-        points1.forEach(point => {
-            positions.push(point.x, point.y, point.z);
+            for (let i = 0; i < shape1.length; i++) {
+                const previousOffset = offset;
+                const points1 = shape1[i];
+                const points2 = shape2[i];
+                const shapeVertices = [];
+                const shapeFaceIndices = [];
+
+                if (points1.length !== points2.length) {
+                    throw new Error('Vertices number must be equal!');
+                }
+
+                points1.forEach(point => {
+                    shapeVertices.push(point.x, point.y, point.z);
+                    offset += 1;
+                });
+
+                points2.forEach(point => {
+                    shapeVertices.push(point.x, point.y, point.z);
+                    offset += 1;
+                });
+
+                const l = points1.length;
+                for (let j = 0; j < l - 1; j++) {
+                    // Build a face by connecting the current profile with ne next one
+                    //
+                    //  i + l +--+  i + 1 + l     next profile
+                    //        |  |
+                    //        |  |
+                    //        |  |
+                    //        |  |
+                    //        |  |
+                    //        |  |
+                    //  i     +--+   i + 1       current profile
+
+                    const face = [
+                        j,
+                        j + 1 + l,
+                        j + l,
+                        j,
+                        j + 1,
+                        j + 1 + l,
+                    ];
+
+                    shapeFaceIndices.push(...face.map(i => i + previousOffset));
+                }
+
+                const vertexData = new BABYLON.VertexData();
+                vertexData.positions = shapeVertices;
+                vertexData.indices = shapeFaceIndices;
+                const mesh = new BABYLON.Mesh('road_' + id + '_' + index, scene);
+                vertexData.applyToMesh(mesh);
+
+                mesh.physicsImpostor = new BABYLON.PhysicsImpostor(
+                    mesh, BABYLON.PhysicsImpostor.ConvexHullImpostor,
+                    { mass: 0, restitution: 0, friction: 0.1 }, scene);
+
+                mesh.material = roadMaterial;
+                meshes.push(mesh);
+            }
         });
 
-        points2.forEach(point => {
-            positions.push(point.x, point.y, point.z);
-        });
-
-        let indices = [];
-        const l = points1.length;
-        for (let i = 0; i < l - 1; i++) {
-            // Build a face by connecting the current profile with ne next one
-            //
-            //  i + l +--+  i + 1 + l     next profile
-            //        |  |
-            //        |  |
-            //        |  |
-            //        |  |
-            //        |  |
-            //        |  |
-            //  i     +--+   i + 1       current profile
-
-            const face = [
-                i,
-                i + 1 + l,
-                i + l,
-                i,
-                i + 1,
-                i + 1 + l,
-            ];
-
-            indices.push(...face);
-        }
-
-        vertexData.positions = positions;
-        vertexData.indices = indices;
-
-        vertexData.applyToMesh(lineMesh);
-
-        return [lineMesh];
+        return meshes;
     }
 
     deleteAll() {
@@ -159,6 +183,7 @@ export default class Routes {
         let pointsResults = db.exec(
             `
 SELECT
+    road_segment.id,
     point_1.x as x1,
     point_1.y as y1,
     point_1.z as z1,
@@ -200,6 +225,7 @@ AND  road_segment.point_2 = point_2.id`);
 
         segmentsAndPoints.forEach((row) => {
             const [
+                id,
                 x1,
                 y1,
                 z1,
@@ -231,12 +257,12 @@ AND  road_segment.point_2 = point_2.id`);
             const forward2 = new BABYLON.Vector3(forward2X,  forward2Y, forward2Z);
             const right2 = forward2.cross(up2).normalize();
 
-            const mesh = this.buildRoadSegment(
+            const meshes = this.buildRoadSegment(
                 {up: up1, p: p1, forward: forward1, right: right1},
                 {up: up2, p: p2, forward: forward2, right: right2},
-                {has_left_wall, has_right_wall}
+                {id, has_left_wall, has_right_wall}
             );
-            this.customMeshes.push(...mesh);
+            this.customMeshes.push(...meshes);
         });
     };
 

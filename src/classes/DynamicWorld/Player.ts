@@ -9,7 +9,7 @@ import DynamicObject from './DynamicObject';
 
 export default class Player {
     app: OSDApp
-    model: BABYLON.AbstractMesh;
+    _model: BABYLON.AbstractMesh;
     vehicle: Vehicle = null;
     frameUpdater: FrameUpdater;
     private dynamicObject: DynamicObject;
@@ -18,6 +18,14 @@ export default class Player {
         this.app = app;
         this.dynamicObject = dynamicObject;
         this.frameUpdater = FrameUpdater.addUpdater(this.update.bind(this));
+    }
+
+    get model() {
+        return this._model;
+    }
+
+    set model(model) {
+        this._model = model;
     }
 
     enterExitVehicle() {

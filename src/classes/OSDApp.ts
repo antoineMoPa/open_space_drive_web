@@ -39,6 +39,19 @@ export default class OSDApp {
         this.dynamicWorld = new DynamicWorld(this);
         this.dynamicWorld.load();
         this.hermes = new Hermes(this);
+
+        // To see physics model, do:
+        setTimeout(this.showPhysicsViewer.bind(this), 3000);
+    }
+
+    showPhysicsViewer() {
+        let physicsViewer = new BABYLON.PhysicsViewer(this.scene);
+
+        this.scene.meshes.forEach(mesh =>{
+            if (mesh.physicsImpostor) {
+                physicsViewer.showImpostor(mesh.physicsImpostor, mesh as any);
+            }
+        });
     }
 
     update() {
@@ -86,8 +99,6 @@ export default class OSDApp {
         const scene = new BABYLON.Scene(this.engine);
         this.scene = scene;
         new BABYLON.HemisphericLight('light', new BABYLON.Vector3(1, 1, 0), this.scene);
-
-        (this.scene._inputManager as any)._onCanvasFocusObserver.callback();
         this.canvas.focus();
         this.createPhysics();
     };
