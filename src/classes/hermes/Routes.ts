@@ -146,10 +146,13 @@ export default class Routes {
         return meshes;
     }
 
-    deleteAll() {
+    clear() {
         const db = this.hermes.db;
-        let results = db.exec("DELETE FROM old_road_segment; DELETE FROM road_segment; DELETE FROM road_points;");
-        this.update();
+        let results = db.exec("DELETE FROM road_segment; DELETE FROM road_point;");
+        this.customMeshes.forEach(mesh => {
+            mesh.dispose();
+        });
+        this.customMeshes = [];
     }
 
     getSegments() {
