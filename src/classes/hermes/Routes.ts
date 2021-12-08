@@ -143,6 +143,8 @@ export default class Routes {
             }
         });
 
+        this.lastDrawnRouteId = id;
+
         return meshes;
     }
 
@@ -213,7 +215,8 @@ INNER JOIN
     road_point as point_1,
     road_point as point_2
 ON road_segment.point_1 = point_1.id
-AND  road_segment.point_2 = point_2.id`);
+AND  road_segment.point_2 = point_2.id
+WHERE road_segment.id > ${this.lastDrawnRouteId}`);
 
         if (!pointsResults[0]) {
             return [];
