@@ -1,6 +1,5 @@
 import * as BABYLON from 'babylonjs';
 import Hermes from './Hermes';
-import * as CANNON from 'cannon';
 
 export default class Routes {
     protected hermes: Hermes = null;
