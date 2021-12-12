@@ -12,6 +12,42 @@ export default class Routes {
         this.update();
     }
 
+    getNearestRoadPoint(point) {
+        const db = this.hermes.db;
+
+        // We'll find all points within a range; then find the closest
+        const epsilon = 30;
+        const xMin = point.x - epsilon;
+        const xMax = point.x + epsilon;
+        const yMin = point.y - epsilon;
+        const yMax = point.y + epsilon;
+        const zMin = point.z - epsilon;
+        const zMax = point.z + epsilon;
+
+        // TODO caching
+        let roadResults = db.exec(`
+SELECT
+x,y,z,upX,upY,upZ
+FROM
+road_point WHERE
+road_point.x BETWEEN ${xMin} AND ${xMax} AND
+road_point.y BETWEEN ${yMin} AND ${yMax} AND
+road_point.z BETWEEN ${zMin} AND ${zMax}
+`);
+
+        if (!roadResults[0]) {
+            return [];
+        }
+
+        const points = roadResults[0].values.map(row => {
+            return {
+                up: new BABYLON.Vector3(row[3], row[4], row[5])
+            }
+        });
+
+        return points[0] || null;
+    }
+
     buildRoadSegment(point1, point2, { id, has_left_wall, has_right_wall }): BABYLON.Mesh[] {
         const {up, p, forward, right} = (point1);
         const p2Up = point2.up;
@@ -39,13 +75,13 @@ export default class Routes {
         const getRoadProfile = ({p, up, forward, right}) => {
             let shapes = [];
             const road_width = 40;
-            const road_height = 1.5;
-            const fence_width = 1.0;
-            const fence_height = 5.0;
+            const road_height = 8.0;
+            const fence_width = 2.0;
+            const fence_height = 1.0;
 
             const p3 = p.add(right.scale(-road_width/2).add(up.scale(road_height/2)));
             const p4 = p3.add(right.scale(road_width));
-            const p5 = p3.add(up.scale(-road_height));
+            const p5 = p3.add(up.scale(-road_height/2));
             const p6 = p5.add(right.scale(road_width));
             const p8 = p3.add(up.scale(fence_height));
             const p9 = p8.add(right.scale(fence_width));
@@ -54,16 +90,16 @@ export default class Routes {
             const p12 = p4.add(up.scale(fence_height));
             const p11 = p10.add(up.scale(fence_height));
 
-            const roadShape = [p3, p4, p6, p5];
+            const roadShape = [p5, p3, p4, p6, p5];
             shapes.push([roadShape]);
 
             if (has_left_wall) {
-                const wall_shape = [p3, p8, p9, p7];
+                const wall_shape = [p3, p8, p9, p7, p3];
                 shapes.push([wall_shape]);
             }
 
             if (has_right_wall) {
-                const wall_shape = [p10, p11, p12, p4];
+                const wall_shape = [p10, p11, p12, p4, p10];
                 shapes.push([wall_shape]);
             }
 
@@ -136,7 +172,7 @@ export default class Routes {
 
                 mesh.physicsImpostor = new BABYLON.PhysicsImpostor(
                     mesh, BABYLON.PhysicsImpostor.ConvexHullImpostor,
-                    { mass: 0, restitution: 0, friction: 0.1 }, scene);
+                    { mass: 0, restitution: 0, friction: 0.2 }, scene);
 
                 mesh.material = roadMaterial;
                 meshes.push(mesh);

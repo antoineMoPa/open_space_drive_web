@@ -4,7 +4,7 @@ import FrameUpdater from '../FrameUpdater';
 
 export default class Vehicle {
     protected app;
-    public dynamicObject;
+    public _dynamicObject;
     protected watchedKeyCodes;
     private trailer = null;
     private trailerJoint = null;
@@ -13,7 +13,7 @@ export default class Vehicle {
 
     constructor(app, dynamicObject) {
         this.app = app;
-        this.dynamicObject = dynamicObject;
+        this._dynamicObject = dynamicObject;
 
         this.frameUpdater = FrameUpdater.addUpdater(this.update.bind(this));
 
@@ -30,6 +30,14 @@ export default class Vehicle {
         };
     }
 
+    get dynamicObject() {
+        return this._dynamicObject;
+    }
+
+    get hasGravity() {
+        return true;
+    }
+
     playerExit() {
         this.clearListenKeyboard();
     }
@@ -39,7 +47,7 @@ export default class Vehicle {
     }
 
     dispose() {
-        this.dynamicObject.model.dispose();
+        this._dynamicObject.model.dispose();
         FrameUpdater.removeUpdater(this.frameUpdater);
     }
 
@@ -53,7 +61,7 @@ export default class Vehicle {
             model.physicsImpostor.setAngularVelocity(angularVelocity.scale(angularDampingFactor));
         };
 
-        dampModel(this.dynamicObject.physicsModel, 0.001, 0.001);
+        dampModel(this._dynamicObject.physicsModel, 0.001, 0.001);
 
         if (this.trailer) {
             dampModel((this.trailer as any).model, 0.001, 0.02);
@@ -92,7 +100,7 @@ export default class Vehicle {
     }
 
     joinTrailer() {
-        const model = this.dynamicObject.physicsModel;
+        const model = this._dynamicObject.physicsModel;
         const trailer = (this.app.dynamicWorld
             .allDynamicObjects as any)
             .filter(obj => (obj as any).manifest.isTrailer)[0];
@@ -129,9 +137,11 @@ export default class Vehicle {
             return;
         }
 
-        let strength = 0.2 * deltaTime * (this.dynamicObject.manifest.acceleration || 1);
+        const mass = this._dynamicObject.manifest.mass;
+        const acceleration = this._dynamicObject.manifest.acceleration || 1;
+        let strength = 5 * deltaTime * acceleration * mass;
         const backStrength = 0.3 * strength;
-        let rotateStrength = 0.002 * deltaTime * (this.dynamicObject.manifest.rotationAcceleration || 1);
+        let rotateStrength = 0.002 * deltaTime * (this._dynamicObject.manifest.rotationAcceleration || 1);
         const rollStrength = rotateStrength;
 
         if (this.trailer) {
@@ -139,25 +149,25 @@ export default class Vehicle {
         }
 
         const rotationMatrix = new BABYLON.Matrix();
-        this.dynamicObject.physicsModel.absoluteRotationQuaternion.toRotationMatrix(rotationMatrix);
+        this._dynamicObject.physicsModel.absoluteRotationQuaternion.toRotationMatrix(rotationMatrix);
 
         const localToGlobal = (vector) => {
             return BABYLON.Vector3.TransformCoordinates(vector, rotationMatrix);
         };
 
-        const velocity = this.dynamicObject.physicsModel.physicsImpostor.getLinearVelocity();
-        const angularVelocity = this.dynamicObject.physicsModel.physicsImpostor.getAngularVelocity();
-        const localVelocityOffset = new BABYLON.Vector3(0,0,0);
+        let velocity = this._dynamicObject.physicsModel.physicsImpostor.getLinearVelocity();
+        const angularVelocity = this._dynamicObject.physicsModel.physicsImpostor.getAngularVelocity();
+        const force = new BABYLON.Vector3(0,0,0);
         const localAngularVelocityOffset = new BABYLON.Vector3(0,0,0);
 
         if (this.watchedKeyCodes.Shift) {
             strength *= 3.0;
         }
         if (this.watchedKeyCodes.KeyW) {
-            localVelocityOffset.z -= strength;
+            force.z -= strength;
         }
         if (this.watchedKeyCodes.KeyS) {
-            localVelocityOffset.z += backStrength;
+            force.z += backStrength;
         }
         if (this.watchedKeyCodes.ArrowLeft) {
             localAngularVelocityOffset.y -= rotateStrength;
@@ -177,8 +187,28 @@ export default class Vehicle {
         if (this.watchedKeyCodes.ArrowDown) {
             localAngularVelocityOffset.x += rotateStrength;
         }
-        const impostor = this.dynamicObject.physicsModel.physicsImpostor;
-        impostor.setLinearVelocity(velocity.add(localToGlobal(localVelocityOffset)));
+
+        let localGravity = new BABYLON.Vector3(0,0,0);
+
+
+        if (this.hasGravity) {
+            const nearestRoadPoint = this.app.hermes.routes.getNearestRoadPoint(this._dynamicObject.physicsModel.position);
+            if (nearestRoadPoint && nearestRoadPoint.up) {
+                const strength = 40.0 * mass;
+                localGravity = nearestRoadPoint.up.negate().scale(strength);
+            }
+
+            localGravity = new BABYLON.Vector3(0,-40 * mass,0);
+        }
+
+        const impostor = this._dynamicObject.physicsModel.physicsImpostor;
+        const modelPosition = this._dynamicObject.physicsModel.getAbsolutePosition(new BABYLON.Vector3(0,0));
+
+        const physicsModel = this._dynamicObject.physicsModel;
+        const boundingInfo = physicsModel.getBoundingInfo();
+        const centerOfMass = boundingInfo.boundingBox.centerWorld;
+
+        impostor.applyForce(localToGlobal(force).add(localGravity), centerOfMass);
         impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
     }
 

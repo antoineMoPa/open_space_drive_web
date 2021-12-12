@@ -20,7 +20,6 @@ export default class OSDApp {
     hermes: Hermes;
     player: ActivePlayer = null;
 
-
     constructor() {
         window['_osdapp'] = this;
         this.canvas = document.createElement('canvas');
@@ -104,8 +103,9 @@ export default class OSDApp {
     };
 
     async createPhysics() {
-        var gravityVector = new BABYLON.Vector3(0, 0, 0);
-        var physicsPlugin = new BABYLON.CannonJSPlugin();
+        let gravityVector = new BABYLON.Vector3(0, 0, 0);
+        let physicsPlugin = new BABYLON.CannonJSPlugin();
         this.scene.enablePhysics(gravityVector, physicsPlugin);
+        const engine = this.scene.getPhysicsEngine();
     }
 }

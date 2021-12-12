@@ -9,6 +9,10 @@ export default class RoadRig extends Vehicle {
         this.watchedKeyCodes['Space'] = false;
     }
 
+    get hasGravity() {
+        return false;
+    }
+
     addPoint() {
         const model = this.dynamicObject.physicsModel;
         const newPointId = this.app.hermes.routes.addPoint({
