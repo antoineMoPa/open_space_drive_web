@@ -5,9 +5,10 @@ import DynamicWorld from './DynamicWorld/DynamicWorld';
 import FrameUpdater from './FrameUpdater';
 import ActivePlayer from './DynamicWorld/ActivePlayer';
 import Hermes from './hermes/Hermes';
-import * as CANNON from 'cannon';
 
-window.CANNON = CANNON;
+// import * as CANNON from 'cannon';
+//
+// window.CANNON = CANNON;
 
 export default class OSDApp {
     canvas : HTMLCanvasElement;
@@ -104,7 +105,9 @@ export default class OSDApp {
 
     async createPhysics() {
         let gravityVector = new BABYLON.Vector3(0, 0, 0);
-        let physicsPlugin = new BABYLON.CannonJSPlugin();
+
+        await (Ammo as any)();
+        let physicsPlugin = new BABYLON.AmmoJSPlugin();
         this.scene.enablePhysics(gravityVector, physicsPlugin);
         const engine = this.scene.getPhysicsEngine();
     }

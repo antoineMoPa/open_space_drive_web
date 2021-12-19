@@ -1,21 +1,28 @@
 import * as BABYLON from 'babylonjs';
 import Hermes from './Hermes';
+import URLFetchStringCached from '../../utils/URLFetchStringCached';
 
 export default class Routes {
     protected hermes: Hermes = null;
     private customMeshes: BABYLON.Mesh[] = [];
     private lastDrawnRouteId = 0;
+    private material = null;
 
     constructor(hermes: Hermes) {
         this.hermes = hermes;
+        this.build();
+    }
+
+    async build() {
+        await this.buildMaterial();
         this.update();
     }
 
-    getNearestRoadPoint(point) {
+    getNearestRoadPoint(point: BABYLON.Vector3) {
         const db = this.hermes.db;
 
         // We'll find all points within a range; then find the closest
-        const epsilon = 30;
+        const epsilon = 100;
         const xMin = point.x - epsilon;
         const xMax = point.x + epsilon;
         const yMin = point.y - epsilon;
@@ -35,19 +42,57 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
 `);
 
         if (!roadResults[0]) {
-            return [];
+            return null;
         }
 
-        const points = roadResults[0].values.map(row => {
+        const points = roadResults[0].values.map((row: any[]) => {
             return {
+                point: new BABYLON.Vector3(row[0], row[1], row[2]),
                 up: new BABYLON.Vector3(row[3], row[4], row[5])
             }
         });
 
-        return points[0] || null;
+        const distance = (item: any) =>
+            (new BABYLON.Vector3(item.point.x, item.point.y, item.point.z)
+             .subtract(point).lengthSquared());
+
+        let sorted = points.sort((a: any, b: any) => {
+            return (distance(a) - distance(b));
+        });
+
+        if (sorted.length >= 1) {
+            return sorted[0];
+        }
+
+        return null;
     }
 
-    buildRoadSegment(point1, point2, { id, has_left_wall, has_right_wall }): BABYLON.Mesh[] {
+    async buildMaterial() {
+        const name = 'roadShader';
+        const scene = this.hermes.app.scene;
+        const vertexShader = await URLFetchStringCached.getUrl('public/shaders/hermes/routeVertex.glsl');
+        const fragmentShader = await URLFetchStringCached.getUrl('public/shaders/hermes/routeFragment.glsl');
+        BABYLON.Effect.ShadersStore[name + 'VertexShader'] = vertexShader;
+        BABYLON.Effect.ShadersStore[name + 'FragmentShader'] = fragmentShader;
+
+        this.material = new BABYLON.ShaderMaterial(
+            name,
+            scene,
+            {
+                vertex: name,
+                fragment: name,
+            },
+            {
+                attributes: ['position', 'normal', 'uv'],
+                uniforms: [
+                    'world', 'worldView', 'worldViewProjection', 'view',
+                    'projection'
+                ],
+            },
+        );
+    }
+
+    buildRoadSegment(point1: any, point2: any, { id, has_left_wall, has_right_wall }): BABYLON.Mesh[] {
         const {up, p, forward, right} = (point1);
         const p2Up = point2.up;
         const p2Forward = point2.forward;
@@ -56,8 +101,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
 
         const scene = this.hermes.app.scene;
         let meshes = [];
-        let physicsShapes = [];
-        const roadMaterial = new BABYLON.StandardMaterial("road", scene);
+        const roadMaterial = this.material;
 
         //
         //                |------------ fence width  -------------|
@@ -71,12 +115,12 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
         //
 
         // Builds an array of shapes to build (road + walls)
-        const getRoadProfile = ({p, up, forward, right}) => {
+        const getRoadProfile = ({p, up, right}) => {
             let shapes = [];
-            const road_width = 40;
+            const road_width = 60;
             const road_height = 8.0;
             const fence_width = 2.0;
-            const fence_height = 1.0;
+            const fence_height = 10.0;
 
             const p3 = p.add(right.scale(-road_width/2).add(up.scale(road_height/2)));
             const p4 = p3.add(right.scale(road_width));
@@ -123,6 +167,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
                 const points2 = shape2[i];
                 const shapeVertices = [];
                 const shapeFaceIndices = [];
+                const shapeUVs = [];
 
                 if (points1.length !== points2.length) {
                     throw new Error('Vertices number must be equal!');
@@ -130,26 +175,29 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
 
                 points1.forEach(point => {
                     shapeVertices.push(point.x, point.y, point.z);
+                    shapeUVs.push(index % 2, offset);
                     offset += 1;
                 });
 
                 points2.forEach(point => {
                     shapeVertices.push(point.x, point.y, point.z);
+                    shapeUVs.push(index % 2, offset);
                     offset += 1;
                 });
 
                 const l = points1.length;
+
                 for (let j = 0; j < l - 1; j++) {
                     // Build a face by connecting the current profile with ne next one
                     //
-                    //  i + l +--+  i + 1 + l     next profile
+                    //  j + l +--+  j + 1 + l     next profile
                     //        |  |
                     //        |  |
                     //        |  |
                     //        |  |
                     //        |  |
                     //        |  |
-                    //  i     +--+   i + 1       current profile
+                    //  j     +--+   j + 1       current profile
 
                     const face = [
                         j,
@@ -157,21 +205,35 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
                         j + l,
                         j,
                         j + 1,
-                        j + 1 + l,
+                        j + 1 + l
                     ];
 
                     shapeFaceIndices.push(...face.map(i => i + previousOffset));
                 }
 
+                // Also fill extremities
+                const face1 = [0,2,1,0,3,2];
+                //shapeFaceIndices.push(...face1.map(i => i + previousOffset));
+                const face2 = [0,1,2,0,2,3];
+                //shapeFaceIndices.push(...face2.map(i => i + previousOffset + l));
+
                 const vertexData = new BABYLON.VertexData();
                 vertexData.positions = shapeVertices;
                 vertexData.indices = shapeFaceIndices;
+                vertexData.uvs = shapeUVs;
                 const mesh = new BABYLON.Mesh('road_' + id + '_' + index, scene);
                 vertexData.applyToMesh(mesh);
 
                 mesh.physicsImpostor = new BABYLON.PhysicsImpostor(
-                    mesh, BABYLON.PhysicsImpostor.ConvexHullImpostor,
-                    { mass: 0, restitution: 0, friction: 0.2 }, scene);
+                    mesh, BABYLON.PhysicsImpostor.MeshImpostor,
+                    {
+                        mass: 0,
+                        restitution: 1.0,
+                        friction: 0.5,
+                        nativeOptions: {
+                            move: false
+                        }
+                    }, scene);
 
                 mesh.material = roadMaterial;
                 meshes.push(mesh);
@@ -264,7 +326,7 @@ WHERE road_segment.id > ${this.lastDrawnRouteId}`);
     update() {
         const segmentsAndPoints = this.getSegmentsAndPoints();
 
-        segmentsAndPoints.forEach((row) => {
+        segmentsAndPoints.forEach((row: any) => {
             const [
                 id,
                 x1,
@@ -326,7 +388,7 @@ WHERE road_segment.id > ${this.lastDrawnRouteId}`);
         };
         const fields = Object.keys(fieldMap);
         const values = Object.keys(fieldMap).map(key => fieldMap[key]);
-        let stmt = db.exec(
+        db.exec(
             `INSERT INTO road_point (${fields.join(',')}) VALUES (${values.join(',')})`
         );
 
@@ -335,9 +397,9 @@ WHERE road_segment.id > ${this.lastDrawnRouteId}`);
         return results[0].values[0][0];
     }
 
-    addSegment({point1ID, point2ID, has_left_wall, has_right_wall}) {
+    addSegment({point1ID, point2ID, has_left_wall, has_right_wall}): void {
         const db = this.hermes.db;
-        let stmt = db.exec(
+        db.exec(
             `INSERT INTO road_segment (point_1, point_2, has_left_wall, has_right_wall) VALUES (${point1ID}, ${point2ID}, ${has_left_wall}, ${has_right_wall})`
         );
         this.update();

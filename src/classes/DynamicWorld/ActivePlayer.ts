@@ -74,13 +74,13 @@ export default class ActivePlayer extends Player {
         this.model.rotationQuaternion = BABYLON.Quaternion.FromEulerVector(rotation);
     }
 
-    updateControl(deltaTime) {
+    updateControl(deltaTime: number) {
         if (this.isInVehicle) {
             return;
         }
-        let strength = 0.2 * deltaTime;
+        let strength = 1000 * deltaTime;
         const backStrength = strength;
-        let rotateStrength = 0.002 * deltaTime;
+        let rotateStrength = 0.007 * deltaTime;
         const rollStrength = rotateStrength;
 
         const rotationMatrix = new BABYLON.Matrix();
@@ -92,17 +92,17 @@ export default class ActivePlayer extends Player {
 
         const velocity = this.model.physicsImpostor.getLinearVelocity();
         const angularVelocity = this.model.physicsImpostor.getAngularVelocity();
-        const localVelocityOffset = new BABYLON.Vector3(0,0,0);
+        const localForce = new BABYLON.Vector3(0,0,0);
         const localAngularVelocityOffset = new BABYLON.Vector3(0,0,0);
 
         if (this.watchedKeyCodes.Shift) {
             strength *= 3.0;
         }
         if (this.watchedKeyCodes.KeyW) {
-            localVelocityOffset.z -= strength;
+            localForce.z -= strength;
         }
         if (this.watchedKeyCodes.KeyS) {
-            localVelocityOffset.z += backStrength;
+            localForce.z += backStrength;
         }
         if (this.watchedKeyCodes.ArrowLeft) {
             localAngularVelocityOffset.y -= rotateStrength;
@@ -124,7 +124,12 @@ export default class ActivePlayer extends Player {
         }
 
         const impostor = this.model.physicsImpostor;
-        impostor.setLinearVelocity(velocity.add(localToGlobal(localVelocityOffset)));
+        const mass = this.dynamicObject.manifest.mass;
+        const gravity = new BABYLON.Vector3(0,-10.0 * mass,0).scale(deltaTime);
+
+        impostor.wakeUp();
+        impostor.applyForce(
+            localToGlobal(localForce.add(gravity)), new BABYLON.Vector3(0,0,0));
         impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
     }
 }

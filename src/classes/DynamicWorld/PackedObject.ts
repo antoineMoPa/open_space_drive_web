@@ -1,32 +1,17 @@
-class URLFetchStringCache {
-    private static resultMapByUrl = {};
-    static async getUrl(url) {
-        if (url in URLFetchStringCache.resultMapByUrl) {
-            return URLFetchStringCache.resultMapByUrl[url];
-        }
-        URLFetchStringCache.resultMapByUrl[url] = new Promise(async (resolve) => {
-            const result = await fetch(url);
-            const text = await result.text();
-            URLFetchStringCache.resultMapByUrl[url] = text;
-            resolve(text);
-        });
-
-        return URLFetchStringCache.resultMapByUrl[url];
-    }
-}
+import URLFetchStringCached from '../../utils/URLFetchStringCached';
 
 export default class PackedObject {
     model;
     scene;
     watchedKeyCodes;
-    #path;
+    private path;
 
     constructor(path) {
-        this.#path = path;
+        this.path = path;
     }
 
     async load() {
-        const manifestText = await URLFetchStringCache.getUrl(this.#path + '/manifest.json');
+        const manifestText = await URLFetchStringCached.getUrl(this.path + '/manifest.json');
         const manifest = JSON.parse(manifestText);
 
         if (!manifest) {
@@ -37,8 +22,8 @@ export default class PackedObject {
         let fragmentShader = null;
 
         if (manifest.hasCustomShader) {
-            const vertexFetchPromise = URLFetchStringCache.getUrl(this.#path + '/vertex.glsl');
-            const fragmentFetchPromise = URLFetchStringCache.getUrl(this.#path + '/fragment.glsl');
+            const vertexFetchPromise = URLFetchStringCached.getUrl(this.path + '/vertex.glsl');
+            const fragmentFetchPromise = URLFetchStringCached.getUrl(this.path + '/fragment.glsl');
             const result = await Promise.all([vertexFetchPromise, fragmentFetchPromise]);
 
             vertexShader = await result[0];

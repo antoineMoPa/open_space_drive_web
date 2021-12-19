@@ -1,5 +1,5 @@
 export default {
     optimizeDeps: {
-        exclude: ['typedoc'],
+        exclude: ['typedoc', 'ammo.js'],
     },
 }

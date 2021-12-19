@@ -11,6 +11,7 @@
         "assets:build": "node scripts/buildAssets.js"
     },
     "dependencies": {
+        "ammo.js": "github:kripken/ammo.js",
         "babylonjs": "file:../Babylon.js/dist/preview release/",
         "babylonjs-loaders": "file:../Babylon.js/dist/preview release/loaders/",
         "cannon": "^0.6.2",

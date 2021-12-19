@@ -147,9 +147,6 @@ export default class DynamicWorld {
 
             if (manifest.isPlayer) {
                 dynamicObject.poseModel.parent.parent = model;
-                app.player = new ActivePlayer(app, dynamicObject);
-                this.app.player.model = model;
-                (this.app.player.dynamicObject as any) = dynamicObject;
             }
 
             model.position.x += x;
@@ -158,6 +155,12 @@ export default class DynamicWorld {
 
             if (manifest.hasCollisions) {
                 makeCollisions(dynamicObject, app.scene);
+            }
+
+            if (manifest.isPlayer) {
+                app.player = new ActivePlayer(app, dynamicObject);
+                this.app.player.model = model;
+                (this.app.player.dynamicObject as any) = dynamicObject;
             }
 
             if (manifest.isVehicle) {

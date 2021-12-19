@@ -3,5 +3,6 @@
     "hasCollisions":true,
     "isStaticObject":false,
     "isPlayer": true,
-    "mass": 80
+    "mass": 80,
+    "friction": 0
 }
