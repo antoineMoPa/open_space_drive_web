@@ -89,7 +89,7 @@ export default class OSDApp {
 
         const factor = 1.0 - Math.min(Math.max(deltaTime * 0.03, 0.0), 1.0);
 
-        const rotationMultiplyer =  this.player?.isInVehicle? 0.06 :  0.2;
+        const rotationMultiplyer =  this.player?.isInVehicle? 0.18 :  0.2;
         const rotationFactor =  rotationMultiplyer * factor;
         this.cameraCurrent.position =
             targetPosition.scale(1.0 - factor).add(currentPosition.scale(factor));

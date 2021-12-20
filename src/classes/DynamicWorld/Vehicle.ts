@@ -156,7 +156,7 @@ export default class Vehicle {
 
         const mass = this._dynamicObject.manifest.mass || 1000;
         const acceleration = this._dynamicObject.manifest.acceleration || 1;
-        let strength = 30.0 * deltaTime * acceleration * mass;
+        let strength = deltaTime * acceleration * mass;
         const backStrength = 0.3 * strength;
         const model = this._dynamicObject.physicsModel;
         const impostor: BABYLON.PhysicsImpostor = model.physicsImpostor;
@@ -190,15 +190,19 @@ export default class Vehicle {
         }
         if (this.watchedKeyCodes.ArrowLeft) {
             localAngularVelocityOffset.y -= rotateStrength;
+            localAngularVelocityOffset.z -= rollStrength * 0.5;
         }
         if (this.watchedKeyCodes.ArrowRight) {
             localAngularVelocityOffset.y += rotateStrength;
+            localAngularVelocityOffset.z += rollStrength * 0.5;
         }
         if (this.watchedKeyCodes.KeyA) {
             localAngularVelocityOffset.z -= rollStrength;
+            localAngularVelocityOffset.y -= rotateStrength * 0.5;
         }
         if (this.watchedKeyCodes.KeyD) {
             localAngularVelocityOffset.z += rollStrength;
+            localAngularVelocityOffset.y += rotateStrength * 0.5;
         }
         if (this.watchedKeyCodes.ArrowUp) {
             localAngularVelocityOffset.x -= rotateStrength;

@@ -147,7 +147,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
             const road_width = 60;
             const road_height = 8.0;
             const fence_width = 2.0;
-            const fence_height = 10.0;
+            const fence_height = 5.0;
 
             const p3 = p.add(right.scale(-road_width/2).add(up.scale(road_height/2)));
             const p4 = p3.add(right.scale(road_width));
