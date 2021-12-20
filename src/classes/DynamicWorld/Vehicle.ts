@@ -21,6 +21,7 @@ export default class Vehicle {
         this._dynamicObject = dynamicObject;
 
         this.frameUpdater = FrameUpdater.addUpdater(this.update.bind(this));
+        this.buildPropellers();
 
         this.watchedKeyCodes = {
             'KeyS': false,
@@ -33,6 +34,21 @@ export default class Vehicle {
             'Shift': false,
             'ArrowRight': false
         };
+    }
+
+    private buildPropellers() {
+        const scene = this.app.scene;
+        const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
+        const { minimum, maximum } = model.getBoundingInfo().boundingBox;
+        const width = maximum.x - minimum.x;
+        const height = maximum.y - minimum.y;
+        const length = maximum.z - minimum.z;
+        // Front Left
+        const fl = BABYLON.MeshBuilder.CreateBox("propeller_fl", {}, scene);
+        model.addChild(fl);
+        fl.position.x = -width/2;
+        fl.position.y = -height * 0.25;
+        fl.position.z = -length/2;
     }
 
     get dynamicObject() {
@@ -244,7 +260,7 @@ export default class Vehicle {
         impostor.wakeUp()
         impostor.applyForce(
             localToGlobal(localVelocityOffset).add(localGravity),
-            new BABYLON.Vector3(0,0,0)
+            model.getAbsolutePosition()
         );
         impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
 

@@ -78,7 +78,7 @@ export default class ActivePlayer extends Player {
         if (this.isInVehicle) {
             return;
         }
-        let strength = 1000 * deltaTime;
+        let strength =  300 * deltaTime;
         const backStrength = strength;
         let rotateStrength = 0.007 * deltaTime;
         const rollStrength = rotateStrength;
@@ -90,7 +90,6 @@ export default class ActivePlayer extends Player {
             return BABYLON.Vector3.TransformCoordinates(vector, rotationMatrix);
         };
 
-        const velocity = this.model.physicsImpostor.getLinearVelocity();
         const angularVelocity = this.model.physicsImpostor.getAngularVelocity();
         const localForce = new BABYLON.Vector3(0,0,0);
         const localAngularVelocityOffset = new BABYLON.Vector3(0,0,0);
@@ -126,10 +125,12 @@ export default class ActivePlayer extends Player {
         const impostor = this.model.physicsImpostor;
         const mass = this.dynamicObject.manifest.mass;
         const gravity = new BABYLON.Vector3(0,-7.0 * mass,0).scale(deltaTime);
+        const offset = new BABYLON.Vector3(0,0,0);
+        offset.addInPlace(this.dynamicObject.boxModel.getAbsolutePosition());
 
         impostor.wakeUp();
         impostor.applyForce(
-            localToGlobal(localForce.add(gravity)), new BABYLON.Vector3(0,0,0));
+            localToGlobal(localForce).add(gravity), offset);
         impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
     }
 }

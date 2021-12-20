@@ -11,9 +11,10 @@
         "assets:build": "node scripts/buildAssets.js"
     },
     "dependencies": {
+        "@babylonjs/core": "^4.2.0",
         "ammo.js": "github:kripken/ammo.js",
-        "babylonjs": "file:../Babylon.js/dist/preview release/",
-        "babylonjs-loaders": "file:../Babylon.js/dist/preview release/loaders/",
+        "babylonjs": "^4.2.0",
+        "babylonjs-loaders": "^4.2.0",
         "cannon": "^0.6.2",
         "commonjs": "^0.0.1",
         "crypto": "^1.0.1",
