@@ -6,7 +6,8 @@ export default class Routes {
     protected hermes: Hermes = null;
     private customMeshes: BABYLON.Mesh[] = [];
     private lastDrawnRouteId = 0;
-    private material = null;
+    private roadMaterial = null;
+    private wallMaterial = null;
 
     constructor(hermes: Hermes) {
         this.hermes = hermes;
@@ -14,7 +15,8 @@ export default class Routes {
     }
 
     async build() {
-        await this.buildMaterial();
+        await this.buildRoadMaterial();
+        await this.buildWallMaterial();
         this.update();
     }
 
@@ -67,7 +69,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
         return null;
     }
 
-    async buildMaterial() {
+    async buildRoadMaterial() {
         const name = 'roadShader';
         const scene = this.hermes.app.scene;
         const vertexShader = await URLFetchStringCached.getUrl('public/shaders/hermes/routeVertex.glsl');
@@ -75,7 +77,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
         BABYLON.Effect.ShadersStore[name + 'VertexShader'] = vertexShader;
         BABYLON.Effect.ShadersStore[name + 'FragmentShader'] = fragmentShader;
 
-        this.material = new BABYLON.ShaderMaterial(
+        this.roadMaterial = new BABYLON.ShaderMaterial(
             name,
             scene,
             {
@@ -92,6 +94,32 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
         );
     }
 
+    async buildWallMaterial() {
+        const name = 'wallShader';
+        const scene = this.hermes.app.scene;
+        const vertexShader = await URLFetchStringCached.getUrl('public/shaders/hermes/wallVertex.glsl');
+        const fragmentShader = await URLFetchStringCached.getUrl('public/shaders/hermes/wallFragment.glsl');
+        BABYLON.Effect.ShadersStore[name + 'VertexShader'] = vertexShader;
+        BABYLON.Effect.ShadersStore[name + 'FragmentShader'] = fragmentShader;
+
+        this.wallMaterial = new BABYLON.ShaderMaterial(
+            name,
+            scene,
+            {
+                vertex: name,
+                fragment: name,
+            },
+            {
+                attributes: ['position', 'normal', 'uv'],
+                uniforms: [
+                    'world', 'worldView', 'worldViewProjection', 'view',
+                    'projection'
+                ],
+            },
+        );
+    }
+
+
     buildRoadSegment(point1: any, point2: any, { id, has_left_wall, has_right_wall }): BABYLON.Mesh[] {
         const {up, p, forward, right} = (point1);
         const p2Up = point2.up;
@@ -101,7 +129,6 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
 
         const scene = this.hermes.app.scene;
         let meshes = [];
-        const roadMaterial = this.material;
 
         //
         //                |------------ fence width  -------------|
@@ -173,15 +200,15 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
                     throw new Error('Vertices number must be equal!');
                 }
 
-                points1.forEach(point => {
+                points1.forEach((point, pointIndex) => {
                     shapeVertices.push(point.x, point.y, point.z);
-                    shapeUVs.push(index % 2, offset);
+                    shapeUVs.push(pointIndex, 0);
                     offset += 1;
                 });
 
-                points2.forEach(point => {
+                points2.forEach((point, pointIndex) => {
                     shapeVertices.push(point.x, point.y, point.z);
-                    shapeUVs.push(index % 2, offset);
+                    shapeUVs.push(pointIndex, 1);
                     offset += 1;
                 });
 
@@ -228,14 +255,15 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
                     mesh, BABYLON.PhysicsImpostor.MeshImpostor,
                     {
                         mass: 0,
-                        restitution: 1.0,
-                        friction: 0.5,
+                        restitution: 0.1,
+                        friction: 0.1,
                         nativeOptions: {
                             move: false
                         }
                     }, scene);
 
-                mesh.material = roadMaterial;
+                // Hack: I know that mesh 1 is the road
+                mesh.material = index == 0 ? this.roadMaterial : this.wallMaterial;
                 meshes.push(mesh);
             }
         });
@@ -247,7 +275,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
 
     clear() {
         const db = this.hermes.db;
-        let results = db.exec("DELETE FROM road_segment; DELETE FROM road_point;");
+        db.exec("DELETE FROM road_segment; DELETE FROM road_point;");
         this.customMeshes.forEach(mesh => {
             mesh.dispose();
         });

@@ -16,13 +16,11 @@ void main(void) {
     int i = int(vPosition.x * 2.0) + 4390;
     int j = int(vPosition.z * 2.0) + 34000;
 
-    float fakeAO = pow(length(mod(vUV, 1.0) - vec2(0.5)), 4.0);
-    vec4 roadColor = vec4(0.3);
+    float fakeAO = pow(length(mod(vUV, 1.0) - vec2(0.5)), 2.0) +
+        pow(1.4 * length(mod(vUV, 1.0) - vec2(0.5)), 10.0);;
+    vec4 wallColor = vec4(0.65);
 
-    col.rgb += roadColor.rgb;
-    float x = vUV.x - 1.0;
-    col.rg += 0.4 * (1.0 - clamp((abs(x - 0.05) - 0.005)/0.003, 0.0, 1.0));
-    col.rg += 0.4 * (1.0 - clamp((abs(x - 0.95) - 0.005)/0.003, 0.0, 1.0));
+    col.rgb += wallColor.rgb;
 
     col.rgb *= 1.0 - 0.4 * fakeAO;
 

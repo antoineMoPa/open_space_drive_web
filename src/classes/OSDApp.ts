@@ -86,10 +86,11 @@ export default class OSDApp {
         const targetPosition = this.cameraGoal.getAbsolutePosition();
         const currentPosition = this.cameraCurrent.getAbsolutePosition();
         const targetRotation = this.cameraGoal.absoluteRotationQuaternion;
-        const currentRotation = this.cameraCurrent.absoluteRotationQuaternion;
 
         const factor = 1.0 - Math.min(Math.max(deltaTime * 0.03, 0.0), 1.0);
-        const rotationFactor = 0.2 * factor;
+
+        const rotationMultiplyer =  this.player?.isInVehicle? 0.06 :  0.2;
+        const rotationFactor =  rotationMultiplyer * factor;
         this.cameraCurrent.position =
             targetPosition.scale(1.0 - factor).add(currentPosition.scale(factor));
         this.cameraCurrent.rotationQuaternion = BABYLON.Quaternion.Slerp(this.cameraCurrent.absoluteRotationQuaternion, targetRotation, rotationFactor);

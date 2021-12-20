@@ -125,7 +125,7 @@ export default class ActivePlayer extends Player {
 
         const impostor = this.model.physicsImpostor;
         const mass = this.dynamicObject.manifest.mass;
-        const gravity = new BABYLON.Vector3(0,-10.0 * mass,0).scale(deltaTime);
+        const gravity = new BABYLON.Vector3(0,-7.0 * mass,0).scale(deltaTime);
 
         impostor.wakeUp();
         impostor.applyForce(

@@ -2,6 +2,11 @@ import * as BABYLON from 'babylonjs';
 
 import FrameUpdater from '../FrameUpdater';
 
+
+const projectVector = (A: BABYLON.Vector3, B: BABYLON.Vector3) => {
+    return B.scale(BABYLON.Vector3.Dot(A, B)/Math.pow(B.length(), 2));
+}
+
 export default class Vehicle {
     protected app;
     public _dynamicObject;
@@ -66,6 +71,18 @@ export default class Vehicle {
         if (this.trailer) {
             dampModel({ model: (this.trailer as any).model, dampPerSecond: 0.001, angularDampPerSecond: 0.02 });
         }
+    }
+
+    updateVelocityDirection(deltaTime: number) {
+        const model = this._dynamicObject.physicsModel;
+        const velocity = model.physicsImpostor.getLinearVelocity();
+        const direction = model.forward;
+        const projectedVelocity = projectVector(velocity, direction);
+        const factor = Math.min(2.0 * deltaTime, 1.0);
+
+        model.physicsImpostor.setLinearVelocity(
+            velocity.scale(1.0 - factor).add(projectedVelocity.scale(factor))
+        );
     }
 
     observeKeyboard(kbInfo: any): void {
@@ -140,8 +157,12 @@ export default class Vehicle {
         const mass = this._dynamicObject.manifest.mass || 1000;
         const acceleration = this._dynamicObject.manifest.acceleration || 1;
         let strength = 30.0 * deltaTime * acceleration * mass;
-        const backStrength = 0.01 * strength;
-        let rotateStrength = 0.004 * deltaTime * (this._dynamicObject.manifest.rotationAcceleration || 1);
+        const backStrength = 0.3 * strength;
+        const model = this._dynamicObject.physicsModel;
+        const impostor: BABYLON.PhysicsImpostor = model.physicsImpostor;
+
+        const speedFactor = Math.max(impostor.getLinearVelocity().length() / 1000.0, 1.0);
+        let rotateStrength = 0.004 * deltaTime * (this._dynamicObject.manifest.rotationAcceleration || 1) / speedFactor;
         const rollStrength = rotateStrength;
 
         if (this.trailer) {
@@ -187,7 +208,7 @@ export default class Vehicle {
         }
 
         let localGravity = new BABYLON.Vector3(0,0,0);
-        const model = this._dynamicObject.physicsModel;
+
         if (this.hasGravity) {
             const position = model.getAbsolutePosition();
             const nearestRoadPoint = this.app.hermes.routes.getNearestRoadPoint(position);
@@ -199,12 +220,10 @@ export default class Vehicle {
                 const roadPoint = nearestRoadPoint.point;
                 const roadUp = nearestRoadPoint.up.normalize(1);
 
-                const projectVector = (A: BABYLON.Vector3, B: BABYLON.Vector3) => {
-                    return B.scale(BABYLON.Vector3.Dot(A, B)/Math.pow(B.length(), 2));
-                }
-                const target = 15;
+                const speedComponent = Math.max(0, impostor.getLinearVelocity().length() - 30) / 30.0;
+                const target = 10 + speedComponent;
                 const targetHeightVector = roadUp.scale(target);
-                let strength = 12.0 * mass;
+                let strength = 20.0 * mass;
                 const projection = projectVector(
                     position.subtract(roadPoint),
                     roadUp
@@ -218,7 +237,6 @@ export default class Vehicle {
             }
         }
 
-        const impostor: BABYLON.PhysicsImpostor = this._dynamicObject.physicsModel.physicsImpostor;
         impostor.wakeUp()
         impostor.applyForce(
             localToGlobal(localVelocityOffset).add(localGravity),
@@ -231,5 +249,6 @@ export default class Vehicle {
     update({ deltaTime }) {
         this.updateControl(deltaTime);
         this.updateDamping(deltaTime);
+        this.updateVelocityDirection(deltaTime);
     }
 }
