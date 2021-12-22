@@ -15,7 +15,7 @@ export default class Vehicle {
     private trailerJoint = null;
     private frameUpdater = null;
     private observers: any[] = [];
-    private frameUpdaterCallbackID: string = null;
+    private material: BABYLON.ShaderMaterial;
 
     constructor(app, dynamicObject) {
         this.app = app;
@@ -41,25 +41,28 @@ export default class Vehicle {
         const scene = this.app.scene;
         const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
         const material = await CreateShaderMaterial('propeller', 'public/shaders/vehicles/propeller', scene);
-        this.frameUpdaterCallbackID = FrameUpdater.addUpdater(({ scene }) => {
-            const cameraPosition = scene.cameras[0].globalPosition;
-            material.setVector3(
-                'cameraPosition',
-                cameraPosition.subtract(model.getAbsolutePosition())
-            );
-        });
+        material.needAlphaBlending = () => true;
+        this.material = material;
 
         const { minimum, maximum } = model.getBoundingInfo().boundingBox;
         const width = maximum.x - minimum.x;
         const height = maximum.y - minimum.y;
         const length = maximum.z - minimum.z;
-        // Front Left
-        const fl = BABYLON.MeshBuilder.CreateBox("propeller_fl", {}, scene);
-        fl.material = material;
-        model.addChild(fl);
-        fl.position.x = -width/2;
-        fl.position.y = -height * 0.25;
-        fl.position.z = -length/2;
+        const positions = [
+            [-width/2+1, -height * 0.5, -length/2+1.5],
+            [width/2-1, -height * 0.5, length/2-1.5],
+            [width/2-1, -height * 0.5, -length/2+1.5],
+            [-width/2+1, -height * 0.5, length/2-1.5],
+        ];
+        positions.forEach(position => {
+            const propeller = BABYLON.MeshBuilder
+                .CreateBox("propeller_fl", {height: 2}, scene);
+            propeller.material = material;
+            model.addChild(propeller);
+            propeller.position.x = position[0];
+            propeller.position.y = position[1];
+            propeller.position.z = position[2]
+        });
     }
 
     get dynamicObject() {
@@ -281,11 +284,13 @@ export default class Vehicle {
         this.updateControl(deltaTime);
         this.updateDamping(deltaTime);
         this.updateVelocityDirection(deltaTime);
-    }
 
-    destroy() {
-        if (this.frameUpdaterCallbackID !== null) {
-            FrameUpdater.removeUpdater(this.frameUpdaterCallbackID);
+        if (this.material) {
+            const date = new Date();
+            this.material.setFloat(
+                'time',
+                (date.getMilliseconds() + date.getSeconds() * 1000) / 100
+            );
         }
     }
 }

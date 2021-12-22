@@ -1,27 +1,24 @@
-
-
-
 precision highp float;
 
 uniform mat4 worldViewProjection;
-uniform vec3 cameraPosition;
+uniform float time;
 
 varying vec2 vUV;
 varying vec3 vPosition;
 varying vec3 vNormal;
 
 void main(void) {
-    vec4 col = vec4(0.0);
+    vec4 color = vec4(0.0);
 
-    int i = int(vPosition.x * 2.0) + 4390;
-    int j = int(vPosition.z * 2.0) + 34000;
+    float acceleration = 0.3;  // todo un hardcode
+    float fire = acceleration * 0.3;
 
-    float fakeAO = pow(length(mod(vUV, 1.0) - vec2(0.5)), 4.0);
-    vec4 roadColor = vec4(0.3);
+    fire += acceleration * cos(vPosition.x * 3.0 + time * 1.0);
+    fire += acceleration * cos(vPosition.y * 2.0 + time * 2.0);
+    fire += acceleration * cos(vPosition.z * 5.0 + time * 3.0);
+    fire *= 2.0;
+    const vec4 fireColor = vec4(0.4, 0.2, 0.4,0.8);
+    color += fire * fireColor;
 
-    col.rgb = cos(cameraPosition);
-
-    col.a = 1.0;
-
-    gl_FragColor = col;
+    gl_FragColor = color.rgba;
 }
