@@ -1,4 +1,3 @@
-import * as BABYLON from 'babylonjs';
 import BabylonPackedObjectReader from './BabylonPackedObjectReader';
 import OSDApp from '../OSDApp';
 import makeCollisions from './CollisionObject';
@@ -9,7 +8,7 @@ import ActivePlayer from './ActivePlayer';
 export default class DynamicWorld {
     initialObjectData = {};
     allDynamicObjects: any[] = [];
-    private allVehicles: Vehicle[] = [];
+    private allVehicles: (Vehicle|RoadRig)[] = [];
     app: OSDApp;
 
     constructor(app) {
@@ -81,7 +80,7 @@ export default class DynamicWorld {
                 this.initialObjectData['building_000000000000000' + ((i ^ j + 2) % 4 + 1)]
                     .push({
                         x: i * 300 - 500,
-                        y: 2,
+                        y: 0,
                         z: j * 250 + 1000
                     });
             }
@@ -134,32 +133,43 @@ export default class DynamicWorld {
             } else {
                 dynamicObject = sourceDynamicObject.clone();
             }
-            const { x, y, z } = parameters;
-            const model = dynamicObject.physicsModel;
+            let { x, y, z } = parameters;
+            const {model, physicsModel, boxModel, poseModel} = dynamicObject;
             const manifest = dynamicObject.manifest;
             const isStaticObject = manifest.isStaticObject ?? true;
 
-            model.position.scaleInPlace(0);
+            [model, physicsModel, boxModel].forEach(model => {
+                if (!model) {
+                    return;
+                }
 
-            if (model.parent) {
-                model.parent = null;
-            }
+                model.position.scaleInPlace(0);
+                if (model.parent && model != poseModel) {
+                    model.parent = null;
+                }
+            })
 
             if (manifest.isPlayer) {
-                dynamicObject.poseModel.parent.parent = model;
+                poseModel.parent.parent = physicsModel;
             }
-
-            model.position.x += x;
-            model.position.y += y;
-            model.position.z += z;
 
             if (manifest.hasCollisions) {
                 makeCollisions(dynamicObject, app.scene);
             }
 
+            physicsModel.position.x += x;
+            physicsModel.position.y += y;
+            physicsModel.position.z += z;
+
+            if (physicsModel.physicsImpostor) {
+                // No idea why I need to do this...
+                const center = physicsModel.getBoundingInfo().boundingBox.center;
+                physicsModel.physicsImpostor.setDeltaPosition(center.negate());
+            }
+
             if (manifest.isPlayer) {
                 app.player = new ActivePlayer(app, dynamicObject);
-                this.app.player.model = model;
+                this.app.player.model = physicsModel;
                 (this.app.player.dynamicObject as any) = dynamicObject;
             }
 
@@ -170,7 +180,7 @@ export default class DynamicWorld {
                 this.allVehicles.push(new RoadRig(app, dynamicObject));
             }
             if (parameters.rotateY) {
-                model.rotation.y = parameters.rotateY;
+                physicsModel.rotation.y = parameters.rotateY;
             }
             if (!isStaticObject) {
                 this.allDynamicObjects.push(dynamicObject);

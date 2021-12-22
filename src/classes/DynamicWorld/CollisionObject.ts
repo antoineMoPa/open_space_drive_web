@@ -19,6 +19,8 @@ export class CollisionObject {
         const restitution = dynamicObject.manifest.restitution || 0.0;
         const friction = dynamicObject.manifest.friction;
         const physicsModel = dynamicObject.physicsModel;
+
+
         const data = {physicsModel, mass, restitution, friction};
 
         this.buildBoxImpostor(data);
@@ -33,10 +35,9 @@ export class CollisionObject {
                 restitution,
                 friction,
                 nativeOptions: {
-                    move: true,
+                    move: mass !== 0,
                     canSleep: mass === 0
                 }
-
             },
             this.scene
         );

@@ -21,7 +21,7 @@ export default class BabylonPackedObjectReader {
     }
 
     dispose() {
-        if (this.frameUpdaterCallbackID !== null) {
+        if (this.frameUpdaterCallbackID) {
             FrameUpdater.removeUpdater(this.frameUpdaterCallbackID);
         }
     }
@@ -42,8 +42,9 @@ export default class BabylonPackedObjectReader {
         const randName = name + '.osd-instance-' + Math.random();
         let boxModel = scene.getMeshByName(name + '_box');
         let model = scene.getMeshByName(name);
+
         if (boxModel) {
-            boxModel.isVisible = false;
+            //boxModel.isVisible = false;
             boxModel.name = randName + '_box';
         }
         if (model) {

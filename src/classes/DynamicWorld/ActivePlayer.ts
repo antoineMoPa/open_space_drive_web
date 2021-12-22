@@ -124,11 +124,17 @@ export default class ActivePlayer extends Player {
 
         const impostor = this.model.physicsImpostor;
         const mass = this.dynamicObject.manifest.mass;
-        const gravity = new BABYLON.Vector3(0,-7.0 * mass,0).scale(deltaTime);
+        let gravity = new BABYLON.Vector3(0,-7.0 * mass,0).scale(deltaTime);
         const offset = new BABYLON.Vector3(0,0,0);
-        offset.addInPlace(this.dynamicObject.boxModel.getAbsolutePosition());
+        const position = this.dynamicObject.boxModel.getAbsolutePosition();
+        offset.addInPlace(position);
 
         impostor.wakeUp();
+
+        if (position.y < 2) {
+            gravity = gravity.scale(0);
+        }
+
         impostor.applyForce(
             localToGlobal(localForce).add(gravity), offset);
         impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));

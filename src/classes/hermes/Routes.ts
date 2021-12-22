@@ -1,6 +1,6 @@
 import * as BABYLON from 'babylonjs';
 import Hermes from './Hermes';
-import URLFetchStringCached from '../../utils/URLFetchStringCached';
+import CreateShaderMaterial from '../../utils/CreateShaderMaterial'
 
 export default class Routes {
     protected hermes: Hermes = null;
@@ -70,53 +70,13 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
     }
 
     async buildRoadMaterial() {
-        const name = 'roadShader';
         const scene = this.hermes.app.scene;
-        const vertexShader = await URLFetchStringCached.getUrl('public/shaders/hermes/routeVertex.glsl');
-        const fragmentShader = await URLFetchStringCached.getUrl('public/shaders/hermes/routeFragment.glsl');
-        BABYLON.Effect.ShadersStore[name + 'VertexShader'] = vertexShader;
-        BABYLON.Effect.ShadersStore[name + 'FragmentShader'] = fragmentShader;
-
-        this.roadMaterial = new BABYLON.ShaderMaterial(
-            name,
-            scene,
-            {
-                vertex: name,
-                fragment: name,
-            },
-            {
-                attributes: ['position', 'normal', 'uv'],
-                uniforms: [
-                    'world', 'worldView', 'worldViewProjection', 'view',
-                    'projection'
-                ],
-            },
-        );
+        this.roadMaterial = await CreateShaderMaterial('road', 'public/shaders/hermes/road', scene);
     }
 
     async buildWallMaterial() {
-        const name = 'wallShader';
         const scene = this.hermes.app.scene;
-        const vertexShader = await URLFetchStringCached.getUrl('public/shaders/hermes/wallVertex.glsl');
-        const fragmentShader = await URLFetchStringCached.getUrl('public/shaders/hermes/wallFragment.glsl');
-        BABYLON.Effect.ShadersStore[name + 'VertexShader'] = vertexShader;
-        BABYLON.Effect.ShadersStore[name + 'FragmentShader'] = fragmentShader;
-
-        this.wallMaterial = new BABYLON.ShaderMaterial(
-            name,
-            scene,
-            {
-                vertex: name,
-                fragment: name,
-            },
-            {
-                attributes: ['position', 'normal', 'uv'],
-                uniforms: [
-                    'world', 'worldView', 'worldViewProjection', 'view',
-                    'projection'
-                ],
-            },
-        );
+        this.wallMaterial = await CreateShaderMaterial('wall', 'public/shaders/hermes/wall', scene);
     }
 
 

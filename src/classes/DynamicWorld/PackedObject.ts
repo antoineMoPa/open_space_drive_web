@@ -1,4 +1,4 @@
-import URLFetchStringCached from '../../utils/URLFetchStringCached';
+import URLFetchStringCached from '../../utils/UrlFetchStringCached';
 
 export default class PackedObject {
     model;

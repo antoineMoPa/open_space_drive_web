@@ -9,9 +9,10 @@ export default class DynamicObject {
     _poseModel = null;
     _boxModel = null;
 
-    constructor({ model, boxModel, manifest }) {
+    constructor({ model, boxModel, poseModel, manifest }) {
         this._model = model;
         this._boxModel = boxModel;
+        this._poseModel = poseModel;
         this._manifest = manifest;
     }
 
@@ -35,6 +36,10 @@ export default class DynamicObject {
         return this._model;
     }
 
+    set model(model) {
+        this._model = model;
+    }
+
     get poseModel() {
         return this._poseModel;
     }
@@ -56,6 +61,6 @@ export default class DynamicObject {
     }
 
     get physicsModel() {
-        return this.boxModel || this.model;
+        return this.boxModel ||  this.model;
     }
 }

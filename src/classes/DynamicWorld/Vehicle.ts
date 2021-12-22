@@ -1,7 +1,7 @@
 import * as BABYLON from 'babylonjs';
 
 import FrameUpdater from '../FrameUpdater';
-
+import CreateShaderMaterial from '../../utils/CreateShaderMaterial';
 
 const projectVector = (A: BABYLON.Vector3, B: BABYLON.Vector3) => {
     return B.scale(BABYLON.Vector3.Dot(A, B)/Math.pow(B.length(), 2));
@@ -15,6 +15,7 @@ export default class Vehicle {
     private trailerJoint = null;
     private frameUpdater = null;
     private observers: any[] = [];
+    private frameUpdaterCallbackID: string = null;
 
     constructor(app, dynamicObject) {
         this.app = app;
@@ -36,15 +37,25 @@ export default class Vehicle {
         };
     }
 
-    private buildPropellers() {
+    private async buildPropellers() {
         const scene = this.app.scene;
         const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
+        const material = await CreateShaderMaterial('propeller', 'public/shaders/vehicles/propeller', scene);
+        this.frameUpdaterCallbackID = FrameUpdater.addUpdater(({ scene }) => {
+            const cameraPosition = scene.cameras[0].globalPosition;
+            material.setVector3(
+                'cameraPosition',
+                cameraPosition.subtract(model.getAbsolutePosition())
+            );
+        });
+
         const { minimum, maximum } = model.getBoundingInfo().boundingBox;
         const width = maximum.x - minimum.x;
         const height = maximum.y - minimum.y;
         const length = maximum.z - minimum.z;
         // Front Left
         const fl = BABYLON.MeshBuilder.CreateBox("propeller_fl", {}, scene);
+        fl.material = material;
         model.addChild(fl);
         fl.position.x = -width/2;
         fl.position.y = -height * 0.25;
@@ -270,5 +281,11 @@ export default class Vehicle {
         this.updateControl(deltaTime);
         this.updateDamping(deltaTime);
         this.updateVelocityDirection(deltaTime);
+    }
+
+    destroy() {
+        if (this.frameUpdaterCallbackID !== null) {
+            FrameUpdater.removeUpdater(this.frameUpdaterCallbackID);
+        }
     }
 }
