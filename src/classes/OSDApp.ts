@@ -41,7 +41,7 @@ export default class OSDApp {
         this.hermes = new Hermes(this);
 
         // To see physics model, do:
-        setTimeout(this.showPhysicsViewer.bind(this), 3000);
+        // setTimeout(this.showPhysicsViewer.bind(this), 3000);
     }
 
     showPhysicsViewer() {

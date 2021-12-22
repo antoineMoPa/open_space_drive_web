@@ -44,7 +44,7 @@ export default class BabylonPackedObjectReader {
         let model = scene.getMeshByName(name);
 
         if (boxModel) {
-            //boxModel.isVisible = false;
+            boxModel.isVisible = false;
             boxModel.name = randName + '_box';
         }
         if (model) {
