@@ -17,7 +17,7 @@ void main(void) {
     int j = int(vPosition.z * 2.0) + 34000;
 
     float fakeAO = pow(length(mod(vUV, 1.0) - vec2(0.5)), 4.0);
-    vec4 roadColor = vec4(0.3);
+    vec4 roadColor = vec4(0.1);
 
     col.rgb += roadColor.rgb;
     float x = vUV.x - 1.0;
@@ -25,6 +25,9 @@ void main(void) {
     col.rg += 0.4 * (1.0 - clamp((abs(x - 0.95) - 0.005)/0.003, 0.0, 1.0));
 
     col.rgb *= 1.0 - 0.4 * fakeAO;
+
+    col.r += clamp(0.02 * cos(vPosition.x * 0.02), 0.0, 1.0);
+    col.b += clamp(0.02 * cos(vPosition.z * 0.02), 0.0, 1.0);
 
     col.a = 1.0;
 

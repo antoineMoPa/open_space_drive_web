@@ -16,6 +16,8 @@ export default class Vehicle {
     private frameUpdater = null;
     private observers: any[] = [];
     private material: BABYLON.ShaderMaterial;
+    private propellers: BABYLON.Mesh[] = [];
+    private boundInfo: { height: number; width: number; length: number };
 
     constructor(app, dynamicObject) {
         this.app = app;
@@ -33,7 +35,8 @@ export default class Vehicle {
             'ArrowLeft': false,
             'KeyD': false,
             'Shift': false,
-            'ArrowRight': false
+            'ArrowRight': false,
+            'Space': false
         };
     }
 
@@ -48,20 +51,27 @@ export default class Vehicle {
         const width = maximum.x - minimum.x;
         const height = maximum.y - minimum.y;
         const length = maximum.z - minimum.z;
+
+        this.boundInfo = { width, height, length };
+
+        const y = -height;
+
         const positions = [
-            [-width/2+1, -height * 0.5, -length/2+1.5],
-            [width/2-1, -height * 0.5, length/2-1.5],
-            [width/2-1, -height * 0.5, -length/2+1.5],
-            [-width/2+1, -height * 0.5, length/2-1.5],
+            [-width/2+0.5, y, -length/2+1.5],
+            [width/2-0.5, y, length/2-1.5],
+            [width/2-0.5, y, -length/2+1.5],
+            [-width/2+0.5, y, length/2-1.5],
         ];
         positions.forEach(position => {
             const propeller = BABYLON.MeshBuilder
-                .CreateBox("propeller_fl", {height: 2}, scene);
+                .CreateBox("propeller_fl", {height: 4, width: 2, depth: 2}, scene);
             propeller.material = material;
             model.addChild(propeller);
             propeller.position.x = position[0];
             propeller.position.y = position[1];
-            propeller.position.z = position[2]
+            propeller.position.z = position[2];
+
+            this.propellers.push(propeller);
         });
     }
 
@@ -96,7 +106,12 @@ export default class Vehicle {
             model.physicsImpostor.setAngularVelocity(angularVelocity.scale(angularDampingFactor));
         };
 
-        dampModel({ model: this._dynamicObject.physicsModel, dampPerSecond: 0.001, angularDampPerSecond: 0.002 });
+        let dampPerSecond = 0.001;
+        if (this.watchedKeyCodes.Space) {
+            dampPerSecond = 0.005;
+        }
+
+        dampModel({ model: this._dynamicObject.physicsModel, dampPerSecond, angularDampPerSecond: 0.002 });
 
         if (this.trailer) {
             dampModel({ model: (this.trailer as any).model, dampPerSecond: 0.001, angularDampPerSecond: 0.02 });
@@ -280,10 +295,15 @@ export default class Vehicle {
 
     }
 
-    update({ deltaTime }) {
-        this.updateControl(deltaTime);
-        this.updateDamping(deltaTime);
-        this.updateVelocityDirection(deltaTime);
+    updatePropellers() {
+        const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
+        const velocity = model.physicsImpostor.getLinearVelocity().length();
+
+        this.propellers.forEach(propeller => {
+            propeller.rotation.x = -Math.min(velocity * 0.003, 3.14/2.0);
+            const h = -this.boundInfo.height;
+            propeller.position.y =  h/2 + 1 + (h/2 - 1) / (Math.max(1,velocity * 0.008));
+        });
 
         if (this.material) {
             const date = new Date();
@@ -291,6 +311,18 @@ export default class Vehicle {
                 'time',
                 (date.getMilliseconds() + date.getSeconds() * 1000) / 100
             );
+            this.material.setFloat(
+                'speed',
+                velocity
+            );
         }
+    }
+
+    update({ deltaTime }) {
+        this.updateControl(deltaTime);
+        this.updateDamping(deltaTime);
+        this.updateVelocityDirection(deltaTime);
+
+        this.updatePropellers();
     }
 }

@@ -18,7 +18,7 @@ void main(void) {
 
     float fakeAO = pow(length(mod(vUV, 1.0) - vec2(0.5)), 2.0) +
         pow(1.4 * length(mod(vUV, 1.0) - vec2(0.5)), 10.0);;
-    vec4 wallColor = vec4(0.65);
+    vec4 wallColor = vec4(0.3);
 
     col.rgb += wallColor.rgb;
 
