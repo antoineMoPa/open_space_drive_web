@@ -18,6 +18,10 @@ export default class Vehicle {
     private material: BABYLON.ShaderMaterial;
     private propellers: BABYLON.Mesh[] = [];
     private boundInfo: { height: number; width: number; length: number };
+    private acceleration:BABYLON.Vector3 = new BABYLON.Vector3(0,0,0);
+    private rotationAcceleration:BABYLON.Vector3 = new BABYLON.Vector3(0,0,0);
+    private smoothedAcceleration:BABYLON.Vector3 = new BABYLON.Vector3(0,0,0);
+    private smoothedRotationAcceleration:BABYLON.Vector3 = new BABYLON.Vector3(0,0,0);
 
     constructor(app, dynamicObject) {
         this.app = app;
@@ -43,9 +47,9 @@ export default class Vehicle {
     private async buildPropellers() {
         const scene = this.app.scene;
         const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
-        const material = await CreateShaderMaterial('propeller', 'public/shaders/vehicles/propeller', scene);
-        material.needAlphaBlending = () => true;
-        this.material = material;
+        const propellerBoxMaterial = await CreateShaderMaterial('propeller', 'public/shaders/vehicles/propeller', scene);
+        propellerBoxMaterial.needAlphaBlending = () => true;
+        this.material = propellerBoxMaterial;
 
         const { minimum, maximum } = model.getBoundingInfo().boundingBox;
         const width = maximum.x - minimum.x;
@@ -54,25 +58,72 @@ export default class Vehicle {
 
         this.boundInfo = { width, height, length };
 
-        const y = -height;
+        const y = -0.25*height;
 
+        // Positions of the propellers to build
+        // Note that in updatePropellers, we assume that the first 2 are at the front
         const positions = [
-            [-width/2+0.5, y, -length/2+1.5],
-            [width/2-0.5, y, length/2-1.5],
-            [width/2-0.5, y, -length/2+1.5],
-            [-width/2+0.5, y, length/2-1.5],
+            [width/2-0.25, y, length/2-1.5],
+            [-width/2+0.25, y, length/2-1.5],
+            [-width/2+0.25, y, -length/2+1.5],
+            [width/2-0.25, y, -length/2+1.5],
         ];
         positions.forEach(position => {
-            const propeller = BABYLON.MeshBuilder
-                .CreateBox("propeller_fl", {height: 4, width: 2, depth: 2}, scene);
-            propeller.material = material;
-            model.addChild(propeller);
-            propeller.position.x = position[0];
-            propeller.position.y = position[1];
-            propeller.position.z = position[2];
+            const box = BABYLON.MeshBuilder
+                .CreateBox("propeller_box_volume", {height: 1, width: 1, depth: 1}, scene);
+            box.material = propellerBoxMaterial;
+            model.addChild(box);
+            box.position.x = position[0];
+            box.position.y = position[1];
+            box.position.z = position[2];
 
-            this.propellers.push(propeller);
+            box.setPivotPoint(new BABYLON.Vector3(0,0,0));
+
+            const halfSphere = BABYLON.MeshBuilder.CreateSphere("propeller", {
+                slice: 0.5,
+                sideOrientation: BABYLON.Mesh.DOUBLESIDE
+            }, scene);
+            box.addChild(halfSphere);
+            halfSphere.position.x = 0;
+            halfSphere.position.y = 0;
+            halfSphere.position.z = 0;
+            this.propellers.push(box);
         });
+    }
+
+    updatePropellers() {
+        const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
+        const acceleration = this.acceleration;
+        const rotationAcceleration = this.rotationAcceleration;
+        // Smoothing factor to blend in acceleration from last frame
+        const factor = 0.98;
+        const smoothedAcceleration = this.smoothedAcceleration;
+        const smoothedRotationAcceleration = this.smoothedRotationAcceleration;
+
+        this.smoothedAcceleration = smoothedAcceleration.scale(factor)
+            .add(acceleration.scale(1.0 - factor));
+        this.smoothedRotationAcceleration = smoothedRotationAcceleration.scale(factor)
+            .add(rotationAcceleration.scale(1.0 - factor));
+
+        this.propellers.forEach((propeller, index) => {
+            propeller.rotation.x = Math.max(Math.min(
+                smoothedAcceleration.z * 0.000005,
+                3.1415/2),-3.1415/2);
+            propeller.rotation.z = smoothedRotationAcceleration.y * 11.0;
+            const h = -this.boundInfo.height;
+        });
+
+        if (this.material) {
+            const date = new Date();
+            this.material.setFloat(
+                'time',
+                (date.getMilliseconds() + date.getSeconds() * 1000) / 100
+            );
+            this.material.setVector3(
+                'acceleration',
+                acceleration
+            );
+        }
     }
 
     get dynamicObject() {
@@ -200,8 +251,8 @@ export default class Vehicle {
         }
 
         const mass = this._dynamicObject.manifest.mass || 1000;
-        const acceleration = this._dynamicObject.manifest.acceleration || 1;
-        let strength = deltaTime * acceleration * mass;
+        const accelerationMultiplier = this._dynamicObject.manifest.acceleration || 1;
+        let strength = deltaTime * accelerationMultiplier * mass;
         const backStrength = 0.3 * strength;
         const model = this._dynamicObject.physicsModel;
         const impostor: BABYLON.PhysicsImpostor = model.physicsImpostor;
@@ -221,39 +272,41 @@ export default class Vehicle {
         };
 
         let angularVelocity = this._dynamicObject.physicsModel.physicsImpostor.getAngularVelocity().clone();
-        const localVelocityOffset = new BABYLON.Vector3(0,0,0);
-        const localAngularVelocityOffset = new BABYLON.Vector3(0,0,0);
+        const acceleration = this.acceleration;
+        acceleration.scaleInPlace(0);
+        const rotationAcceleration = this.rotationAcceleration;
+        rotationAcceleration.scaleInPlace(0);
 
         if (this.watchedKeyCodes.Shift) {
             strength *= 3.0;
         }
         if (this.watchedKeyCodes.KeyW) {
-            localVelocityOffset.z -= strength;
+            acceleration.z -= strength;
         }
         if (this.watchedKeyCodes.KeyS) {
-            localVelocityOffset.z += backStrength;
+            acceleration.z += backStrength;
         }
         if (this.watchedKeyCodes.ArrowLeft) {
-            localAngularVelocityOffset.y -= rotateStrength;
-            localAngularVelocityOffset.z -= rollStrength * 0.5;
+            rotationAcceleration.y -= rotateStrength;
+            rotationAcceleration.z -= rollStrength * 0.5;
         }
         if (this.watchedKeyCodes.ArrowRight) {
-            localAngularVelocityOffset.y += rotateStrength;
-            localAngularVelocityOffset.z += rollStrength * 0.5;
+            rotationAcceleration.y += rotateStrength;
+            rotationAcceleration.z += rollStrength * 0.5;
         }
         if (this.watchedKeyCodes.KeyA) {
-            localAngularVelocityOffset.z -= rollStrength;
-            localAngularVelocityOffset.y -= rotateStrength * 0.5;
+            rotationAcceleration.z -= rollStrength;
+            rotationAcceleration.y -= rotateStrength * 0.5;
         }
         if (this.watchedKeyCodes.KeyD) {
-            localAngularVelocityOffset.z += rollStrength;
-            localAngularVelocityOffset.y += rotateStrength * 0.5;
+            rotationAcceleration.z += rollStrength;
+            rotationAcceleration.y += rotateStrength * 0.5;
         }
         if (this.watchedKeyCodes.ArrowUp) {
-            localAngularVelocityOffset.x -= rotateStrength;
+            rotationAcceleration.x -= rotateStrength;
         }
         if (this.watchedKeyCodes.ArrowDown) {
-            localAngularVelocityOffset.x += rotateStrength;
+            rotationAcceleration.x += rotateStrength;
         }
 
         let localGravity = new BABYLON.Vector3(0,0,0);
@@ -288,41 +341,17 @@ export default class Vehicle {
 
         impostor.wakeUp()
         impostor.applyForce(
-            localToGlobal(localVelocityOffset).add(localGravity),
+            localToGlobal(acceleration).add(localGravity),
             model.getAbsolutePosition()
         );
-        impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
+        impostor.setAngularVelocity(angularVelocity.add(localToGlobal(rotationAcceleration)));
 
-    }
-
-    updatePropellers() {
-        const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
-        const velocity = model.physicsImpostor.getLinearVelocity().length();
-
-        this.propellers.forEach(propeller => {
-            propeller.rotation.x = -Math.min(velocity * 0.003, 3.14/2.0);
-            const h = -this.boundInfo.height;
-            propeller.position.y =  h/2 + 1 + (h/2 - 1) / (Math.max(1,velocity * 0.008));
-        });
-
-        if (this.material) {
-            const date = new Date();
-            this.material.setFloat(
-                'time',
-                (date.getMilliseconds() + date.getSeconds() * 1000) / 100
-            );
-            this.material.setFloat(
-                'speed',
-                velocity
-            );
-        }
     }
 
     update({ deltaTime }) {
         this.updateControl(deltaTime);
         this.updateDamping(deltaTime);
         this.updateVelocityDirection(deltaTime);
-
         this.updatePropellers();
     }
 }
