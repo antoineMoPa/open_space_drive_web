@@ -12,7 +12,8 @@ git branch -D gh-pages &&\
     git add .nojekyll &&\
     git add -f dist/* &&\
     git add -f node_modules/ammo.js/builds/ammo.js &&\
-    git add -f node_modules/sql.js/dist/sql-wasm.* &&\
+    git add -f node_modules/sql.js/dist/sql-wasm.js &&\
+    git add -f node_modules/sql.js/dist/sql-wasm.wasm &&\
     git mv -f dist/* . && \
     git commit -m "deploy";
 
