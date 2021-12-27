@@ -1,5 +1,6 @@
 import * as BABYLON from 'babylonjs';
 
+import OSDApp from '../OSDApp';
 import FrameUpdater from '../FrameUpdater';
 import CreateShaderMaterial from '../../utils/CreateShaderMaterial';
 
@@ -8,7 +9,7 @@ const projectVector = (A: BABYLON.Vector3, B: BABYLON.Vector3) => {
 }
 
 export default class Vehicle {
-    protected app;
+    protected app: OSDApp;
     public _dynamicObject;
     protected watchedKeyCodes;
     private trailer = null;
@@ -58,7 +59,7 @@ export default class Vehicle {
 
         this.boundInfo = { width, height, length };
 
-        const y = -0.25*height;
+        const y = -0.25 * height;
 
         // Positions of the propellers to build
         // Note that in updatePropellers, we assume that the first 2 are at the front
@@ -70,7 +71,7 @@ export default class Vehicle {
         ];
         positions.forEach(position => {
             const box = BABYLON.MeshBuilder
-                .CreateBox("propeller_box_volume", {height: 1, width: 1, depth: 1}, scene);
+                .CreateBox("propeller_box_volume", {height: 3, width: 3, depth: 3}, scene);
             box.material = propellerBoxMaterial;
             model.addChild(box);
             box.position.x = position[0];
@@ -105,12 +106,11 @@ export default class Vehicle {
         this.smoothedRotationAcceleration = smoothedRotationAcceleration.scale(factor)
             .add(rotationAcceleration.scale(1.0 - factor));
 
-        this.propellers.forEach((propeller, index) => {
+        this.propellers.forEach((propeller,) => {
             propeller.rotation.x = Math.max(Math.min(
-                smoothedAcceleration.z * 0.000005,
-                3.1415/2),-3.1415/2);
+                smoothedAcceleration.z * 0.000001,
+                0.4),-0.4);
             propeller.rotation.z = smoothedRotationAcceleration.y * 11.0;
-            const h = -this.boundInfo.height;
         });
 
         if (this.material) {
@@ -122,6 +122,10 @@ export default class Vehicle {
             this.material.setVector3(
                 'acceleration',
                 acceleration
+            );
+            this.material.setVector3(
+                'cameraPosition',
+                this.app.camera.position
             );
         }
     }
