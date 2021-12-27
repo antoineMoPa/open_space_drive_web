@@ -1,0 +1,10 @@
+{
+    "hasCustomShader": false,
+    "isStaticObject": false,
+    "hasCollisions": true,
+    "isRoadRig": true,
+    "cameraYOffset": 10,
+    "mass": 3000,
+    "acceleration": 1.0,
+    "rotationAcceleration": 0.2
+}

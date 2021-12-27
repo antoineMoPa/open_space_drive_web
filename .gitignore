@@ -1,0 +1,13 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+*.blend1
+js/*
+*.log
+*.sqbpro
+public/objects/manifest.json
+
+# We will keep only yarn.lock
+package-lock.json

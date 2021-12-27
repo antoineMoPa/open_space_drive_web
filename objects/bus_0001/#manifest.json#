@@ -1,0 +1,9 @@
+{
+    "hasCustomShader": false,
+    "isStaticObject": false,
+    "hasCollisions": true,
+    "isVehicle": true,
+    "mass": 8000,
+    "acceleration": 3.03,
+    "rotationAcceleration": 0.4
+}
