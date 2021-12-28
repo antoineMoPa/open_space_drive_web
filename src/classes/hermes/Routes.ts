@@ -8,6 +8,7 @@ export default class Routes {
     private lastDrawnRouteId = 0;
     private roadMaterial = null;
     private wallMaterial = null;
+    public static ROAD_WIDTH = 8;
 
     constructor(hermes: Hermes) {
         this.hermes = hermes;
@@ -35,7 +36,7 @@ export default class Routes {
         // TODO caching
         let roadResults = db.exec(`
 SELECT
-x,y,z,upX,upY,upZ
+x,y,z,upX,upY,upZ,forwardX,forwardY,forwardZ
 FROM
 road_point WHERE
 road_point.x BETWEEN ${xMin} AND ${xMax} AND
@@ -50,7 +51,8 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
         const points = roadResults[0].values.map((row: any[]) => {
             return {
                 point: new BABYLON.Vector3(row[0], row[1], row[2]),
-                up: new BABYLON.Vector3(row[3], row[4], row[5])
+                up: new BABYLON.Vector3(row[3], row[4], row[5]),
+                forward: new BABYLON.Vector3(row[6], row[7], row[8])
             }
         });
 
@@ -91,7 +93,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
         let meshes = [];
 
         //
-        //                |------------ fence width  -------------|
+        //                |------------- road width  -------------|
         //
         //                |-| fence width
         //            p8   _  p9              ^ up           p11 _ p12     _
@@ -105,7 +107,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
         const getRoadProfile = ({p, up, right}) => {
             let shapes = [];
             const road_width = 60;
-            const road_height = 8.0;
+            const road_height = Routes.ROAD_WIDTH;
             const fence_width = 2.0;
             const fence_height = 5.0;
 

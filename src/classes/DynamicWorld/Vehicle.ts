@@ -3,6 +3,7 @@ import * as BABYLON from 'babylonjs';
 import OSDApp from '../OSDApp';
 import FrameUpdater from '../FrameUpdater';
 import CreateShaderMaterial from '../../utils/CreateShaderMaterial';
+import Routes from '../hermes/Routes';
 
 const projectVector = (A: BABYLON.Vector3, B: BABYLON.Vector3) => {
     return B.scale(BABYLON.Vector3.Dot(A, B)/Math.pow(B.length(), 2));
@@ -314,6 +315,7 @@ export default class Vehicle {
         }
 
         let localGravity = new BABYLON.Vector3(0,0,0);
+        let aboveRoad = false;
 
         if (this.hasGravity) {
             const position = model.getAbsolutePosition();
@@ -325,37 +327,108 @@ export default class Vehicle {
                 nearestRoadPoint.point) {
                 const roadPoint = nearestRoadPoint.point;
                 const roadUp = nearestRoadPoint.up.normalize(1);
-
-                const speedComponent = Math.max(0, impostor.getLinearVelocity().length() - 30) / 30.0;
-                const target = 10 + speedComponent;
+                const target = 10;
                 const targetHeightVector = roadUp.scale(target);
-                let strength = 20.0 * mass;
+                let strength = 60.0 * mass;
                 const projection = projectVector(
                     position.subtract(roadPoint),
                     roadUp
                 );
-                localGravity = targetHeightVector.subtract(projection).scale(strength);
+
+                localGravity = targetHeightVector.subtract(projection).scale(strength); // * distanceFactor(projection.length()/30));
+
+                // Damp vertical speed relative to road to prevent endless oscillation
+                const velocity = impostor.getLinearVelocity();
+                const verticalSpeed = projectVector(velocity, roadUp);
+                localGravity.addInPlace(verticalSpeed.scale(-1.3 * strength));
+
+                const roadForward = nearestRoadPoint.forward.normalize(1);
+                const roadRight = roadForward.cross(roadUp);
+                const roadWidth = Routes.ROAD_WIDTH;
+
+                // If under road or on the side of road, cancel impact
+                if (BABYLON.Vector3.Dot(position.subtract(roadPoint), roadUp) < 0.0 ||
+                    projectVector(position.subtract(roadPoint), roadRight).length() > roadWidth * 4) {
+                    localGravity.scaleInPlace(0);
+                } else {
+                    aboveRoad = true;
+                }
 
                 angularVelocity.addInPlace(
                     roadUp.cross(this._dynamicObject.physicsModel.up)
-                        .scale(-0.02 * deltaTime)
+                        .scale(-0.1 * deltaTime)
                 );
             }
         }
 
         impostor.wakeUp()
+        const localDamper = this.localDamper();
+        if (!aboveRoad) {
+            localDamper.scaleInPlace(0);
+        }
         impostor.applyForce(
-            localToGlobal(acceleration).add(localGravity),
+            localToGlobal(acceleration.add(localDamper)).add(localGravity).add(this.damper()),
             model.getAbsolutePosition()
         );
-        impostor.setAngularVelocity(angularVelocity.add(localToGlobal(rotationAcceleration)));
+        const angularDampPerSecond = 0.001;
+        impostor.setAngularVelocity(angularVelocity.add(localToGlobal(rotationAcceleration)).scale(1.0 - deltaTime * angularDampPerSecond));
 
     }
 
+    /**
+     * This method returns a force to apply that simulate damping propellers which try to:
+     * stabilize movements
+     */
+    damper(): BABYLON.Vector3 {
+        const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
+        const impostor: BABYLON.PhysicsImpostor = model.physicsImpostor;
+        const velocity = impostor.getLinearVelocity();
+        const damper = new BABYLON.Vector3(0.0, 0.0, 0.0);
+        const mass = this._dynamicObject.manifest.mass || 1000;
+
+        // Damp speed
+        damper.z -= velocity.z;
+        damper.x -= velocity.x;
+
+        let dampScale = 1.0 * mass;
+
+        if (this.watchedKeyCodes.Space) {
+            dampScale *= 3.0;
+        }
+
+        return damper.scale(dampScale);
+    }
+
+    /**
+     * This method returns a force to apply that simulate damping propellers which
+     * try to align velocity to vehicle forward vector
+     */
+    localDamper(): BABYLON.Vector3 {
+        const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
+        const impostor: BABYLON.PhysicsImpostor = model.physicsImpostor;
+        const velocity = impostor.getLinearVelocity();
+        const localVelocity = new BABYLON.Vector3(projectVector(velocity, model.right).length(), 0.0, projectVector(velocity, model.forward).length());
+        const damper = new BABYLON.Vector3(0.0, 0.0, 0.0);
+        const mass = this._dynamicObject.manifest.mass || 1000;
+
+        // Damp speed
+        damper.z -= localVelocity.x;
+        damper.z -= localVelocity.x;
+
+        let dampScale = 1.0 * mass;
+
+        if (this.watchedKeyCodes.Space) {
+            dampScale *= 5.0;
+        }
+
+        return damper.scale(dampScale);
+    }
+
+
     update({ deltaTime }) {
         this.updateControl(deltaTime);
-        this.updateDamping(deltaTime);
-        this.updateVelocityDirection(deltaTime);
+        //this.updateDamping(deltaTime);
+        //this.updateVelocityDirection(deltaTime);
         this.updatePropellers();
     }
 }

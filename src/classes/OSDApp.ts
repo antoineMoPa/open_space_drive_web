@@ -105,7 +105,7 @@ export default class OSDApp {
     };
 
     async createPhysics() {
-        let gravityVector = new BABYLON.Vector3(0, 0, 0);
+        let gravityVector = new BABYLON.Vector3(0, -30, 0);
 
         await (Ammo as any)();
         let physicsPlugin = new BABYLON.AmmoJSPlugin();
