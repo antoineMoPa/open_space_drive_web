@@ -13,31 +13,35 @@ export class CollisionObject {
     constructor(dynamicObject: DynamicObject, scene: BABYLON.Scene) {
         this.scene = scene;
         this.dynamicObject = dynamicObject;
-        this.isStaticObject = dynamicObject.manifest.isStaticObject ?? true;
+        const { manifest } = dynamicObject;
+        this.isStaticObject = manifest.isStaticObject ?? true;
 
         const mass = this.isStaticObject ? 0 : dynamicObject.manifest.mass || 1;
         const restitution = dynamicObject.manifest.restitution || 0.0;
         const friction = dynamicObject.manifest.friction;
         const physicsModel = dynamicObject.physicsModel;
 
-
-        const data = {physicsModel, mass, restitution, friction};
-
-        this.buildBoxImpostor(data);
+        this.buildBoxImpostor({physicsModel, mass, restitution, friction, manifest});
     }
 
-    private buildBoxImpostor({physicsModel, mass, restitution, friction}) {
+    private buildBoxImpostor({physicsModel, mass, restitution, friction, manifest}) {
+        let impostorType = BABYLON.PhysicsImpostor.BoxImpostor;
+
+        if (manifest.meshImpostor) {
+            impostorType = BABYLON.PhysicsImpostor.MeshImpostor;
+        }
+
         physicsModel.physicsImpostor = new BABYLON.PhysicsImpostor(
             physicsModel,
-            BABYLON.PhysicsImpostor.BoxImpostor,
+            impostorType,
             {
                 mass,
                 restitution,
                 friction,
                 nativeOptions: {
                     move: mass !== 0,
-                    canSleep: mass === 0
-                }
+                    canSleep: false
+                },
             },
             this.scene
         );

@@ -157,11 +157,12 @@ export default class DynamicWorld {
                 makeCollisions(dynamicObject, app.scene);
             }
 
-            physicsModel.position.x += x;
-            physicsModel.position.y += y;
-            physicsModel.position.z += z;
+            (boxModel || physicsModel).position.x += x;
+            (boxModel || physicsModel).position.y += y;
+            (boxModel || physicsModel).position.z += z;
 
-            if (physicsModel.physicsImpostor) {
+            const impostor: BABYLON.PhysicsImpostor = physicsModel.physicsImpostor;
+            if (impostor && impostor.type != BABYLON.PhysicsImpostor.MeshImpostor) {
                 // No idea why I need to do this...
                 const center = physicsModel.getBoundingInfo().boundingBox.center;
                 physicsModel.physicsImpostor.setDeltaPosition(center.negate());

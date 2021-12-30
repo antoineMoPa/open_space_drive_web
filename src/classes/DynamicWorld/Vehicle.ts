@@ -366,8 +366,15 @@ export default class Vehicle {
         if (!aboveRoad) {
             localDamper.scaleInPlace(0);
         }
+        const force = localToGlobal(acceleration.add(localDamper));
+
+        if (!aboveRoad) {
+            // Car force and damping cannot go against gravity if not over road
+            force.multiplyInPlace(new BABYLON.Vector3(1.0, 0.0, 1.0));
+        }
+
         impostor.applyForce(
-            localToGlobal(acceleration.add(localDamper)).add(localGravity).add(this.damper()),
+            force.add(localGravity).add(this.damper()),
             model.getAbsolutePosition()
         );
         const angularDampPerSecond = 0.001;
