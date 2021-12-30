@@ -85,12 +85,17 @@ export default class OSDApp {
 
         const targetPosition = this.cameraGoal.getAbsolutePosition();
         const currentPosition = this.cameraCurrent.getAbsolutePosition();
+        const currentRotation = this.cameraCurrent.absoluteRotationQuaternion;
         const targetRotation = this.cameraGoal.absoluteRotationQuaternion;
 
-        const factor = 1.0 - Math.min(Math.max(deltaTime * 0.03, 0.0), 1.0);
+        let factor = 1.0 - Math.min(Math.max(deltaTime * 0.03, 0.0), 1.0);
+        const rotationMultiplier =  this.player?.isInVehicle? 0.18 :  0.5;
+        let rotationFactor =  rotationMultiplier * factor;
 
-        const rotationMultiplyer =  this.player?.isInVehicle? 0.18 :  0.2;
-        const rotationFactor =  rotationMultiplyer * factor;
+        if (this.player?.isInVehicle) {
+            factor *= Math.pow(Math.min(this.player.vehicle.physicsImpostor.getLinearVelocity().length(), 30.0) / 30.0, 8.0);
+        }
+
         this.cameraCurrent.position =
             targetPosition.scale(1.0 - factor).add(currentPosition.scale(factor));
         this.cameraCurrent.rotationQuaternion = BABYLON.Quaternion.Slerp(this.cameraCurrent.absoluteRotationQuaternion, targetRotation, rotationFactor);
@@ -104,12 +109,22 @@ export default class OSDApp {
         this.createPhysics();
     };
 
+    disableGravity() {
+        this.scene.getPhysicsEngine().setGravity(new BABYLON.Vector3(0,0,0));
+    }
+
+    enableGravity() {
+        this.scene.getPhysicsEngine().setGravity(new BABYLON.Vector3(0,-60,0));
+    }
+
+
     async createPhysics() {
-        let gravityVector = new BABYLON.Vector3(0, -30, 0);
+        let gravityVector = new BABYLON.Vector3(0, 0, 0);
 
         await (Ammo as any)();
         let physicsPlugin = new BABYLON.AmmoJSPlugin();
         this.scene.enablePhysics(gravityVector, physicsPlugin);
         const engine = this.scene.getPhysicsEngine();
+        this.enableGravity();
     }
 }

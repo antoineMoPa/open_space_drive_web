@@ -62,8 +62,6 @@ export default class ActivePlayer extends Player {
     }
 
     jump() {
-        // TODO : check if there is the ground below, right now, we can jump forever from the
-        // void
         const velocity = this.model.physicsImpostor.getLinearVelocity();
         const globalVelocityOffset = new BABYLON.Vector3(0,0,0);
         globalVelocityOffset.y += 60;
@@ -131,7 +129,30 @@ export default class ActivePlayer extends Player {
         impostor.wakeUp();
 
         impostor.applyForce(
-            localToGlobal(localForce), offset);
+            localToGlobal(localForce).add(this.damper()), offset);
         impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));
+    }
+
+    /**
+     * This method returns a force to apply that simulate damping propellers which try to:
+     * stabilize movements
+     */
+    damper(): BABYLON.Vector3 {
+        const impostor = this.model.physicsImpostor;
+        const velocity = impostor.getLinearVelocity();
+        const damper = new BABYLON.Vector3(0.0, 0.0, 0.0);
+        const mass = this.dynamicObject.manifest.mass;
+
+        // Damp speed
+        damper.z -= velocity.z;
+        damper.x -= velocity.x;
+
+        let dampScale = 1.0;
+
+        if (this.watchedKeyCodes.Space) {
+            dampScale *= 3.0;
+        }
+
+        return damper.scale(dampScale);
     }
 }

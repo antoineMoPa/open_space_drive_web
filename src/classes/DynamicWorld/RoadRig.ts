@@ -13,6 +13,18 @@ export default class RoadRig extends Vehicle {
         return false;
     }
 
+    playerExit() {
+        super.playerExit();
+        this.app.enableGravity();
+    }
+
+    playerEnter() {
+        super.playerEnter();
+        // Road rig works better without gravity, as it can build roads
+        // at arbitrary positions.
+        this.app.disableGravity();
+    }
+
     addPoint() {
         const model = this.dynamicObject.physicsModel;
         const newPointId = this.app.hermes.routes.addPoint({
@@ -38,8 +50,8 @@ export default class RoadRig extends Vehicle {
         }
     }
 
-    observeKeyboard(kbInfo, deltaTime) {
-        super.observeKeyboard(kbInfo, deltaTime);
+    observeKeyboard(kbInfo): void {
+        super.observeKeyboard(kbInfo);
 
         const code = kbInfo.event.code.toString();
 

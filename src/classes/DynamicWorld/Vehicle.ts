@@ -3,10 +3,11 @@ import * as BABYLON from 'babylonjs';
 import OSDApp from '../OSDApp';
 import FrameUpdater from '../FrameUpdater';
 import CreateShaderMaterial from '../../utils/CreateShaderMaterial';
+import DynamicObject from './DynamicObject';
 import Routes from '../hermes/Routes';
 
-const projectVector = (A: BABYLON.Vector3, B: BABYLON.Vector3) => {
-    return B.scale(BABYLON.Vector3.Dot(A, B)/Math.pow(B.length(), 2));
+function projectVector(A: BABYLON.Vector3, B: BABYLON.Vector3) {
+    return B.scale(BABYLON.Vector3.Dot(A, B) / Math.pow(B.length(), 2));
 }
 
 export default class Vehicle {
@@ -131,7 +132,7 @@ export default class Vehicle {
         }
     }
 
-    get dynamicObject() {
+    get dynamicObject(): DynamicObject {
         return this._dynamicObject;
     }
 
@@ -152,27 +153,6 @@ export default class Vehicle {
         FrameUpdater.removeUpdater(this.frameUpdater);
     }
 
-    private updateDamping(deltaTime: number): void {
-        const dampModel = ({ model, dampPerSecond, angularDampPerSecond }): void => {
-            const dampingFactor = (1.0 - dampPerSecond * deltaTime);
-            const angularDampingFactor = (1.0 - angularDampPerSecond * deltaTime);
-            const velocity = model.physicsImpostor.getLinearVelocity();
-            const angularVelocity = model.physicsImpostor.getAngularVelocity();
-            model.physicsImpostor.setLinearVelocity(velocity.scale(dampingFactor));
-            model.physicsImpostor.setAngularVelocity(angularVelocity.scale(angularDampingFactor));
-        };
-
-        let dampPerSecond = 0.001;
-        if (this.watchedKeyCodes.Space) {
-            dampPerSecond = 0.005;
-        }
-
-        dampModel({ model: this._dynamicObject.physicsModel, dampPerSecond, angularDampPerSecond: 0.002 });
-
-        if (this.trailer) {
-            dampModel({ model: (this.trailer as any).model, dampPerSecond: 0.001, angularDampPerSecond: 0.02 });
-        }
-    }
 
     updateVelocityDirection(deltaTime: number) {
         const model = this._dynamicObject.physicsModel;
@@ -276,7 +256,7 @@ export default class Vehicle {
             return BABYLON.Vector3.TransformCoordinates(vector, rotationMatrix);
         };
 
-        let angularVelocity = this._dynamicObject.physicsModel.physicsImpostor.getAngularVelocity().clone();
+        let angularVelocity = impostor.getAngularVelocity().clone();
         const acceleration = this.acceleration;
         acceleration.scaleInPlace(0);
         const rotationAcceleration = this.rotationAcceleration;
@@ -312,6 +292,16 @@ export default class Vehicle {
         }
         if (this.watchedKeyCodes.ArrowDown) {
             rotationAcceleration.x += rotateStrength;
+        }
+        if (this.watchedKeyCodes.Space) {
+            // flip car when upside down & pressing space
+            if (model.up.y < 0) {
+                const rotation = model.rotationQuaternion.toEulerAngles();
+                rotation.x = 0;
+                rotation.z = 0;
+                model.rotationQuaternion = BABYLON.Quaternion.FromEulerVector(rotation);
+                impostor.setAngularVelocity(new BABYLON.Vector3(0, 0, 0));
+            }
         }
 
         let localGravity = new BABYLON.Vector3(0,0,0);
@@ -362,13 +352,10 @@ export default class Vehicle {
         }
 
         impostor.wakeUp()
-        const localDamper = this.localDamper();
-        if (!aboveRoad) {
-            localDamper.scaleInPlace(0);
-        }
-        const force = localToGlobal(acceleration.add(localDamper));
+        const force = localToGlobal(acceleration);
+        const affectedByGravity = !aboveRoad && this.hasGravity;
 
-        if (!aboveRoad) {
+        if (affectedByGravity) {
             // Car force and damping cannot go against gravity if not over road
             force.multiplyInPlace(new BABYLON.Vector3(1.0, 0.0, 1.0));
         }
@@ -395,6 +382,9 @@ export default class Vehicle {
 
         // Damp speed
         damper.z -= velocity.z;
+        if (!this.hasGravity) {
+            damper.y -= velocity.y;
+        }
         damper.x -= velocity.x;
 
         let dampScale = 1.0 * mass;
@@ -406,36 +396,13 @@ export default class Vehicle {
         return damper.scale(dampScale);
     }
 
-    /**
-     * This method returns a force to apply that simulate damping propellers which
-     * try to align velocity to vehicle forward vector
-     */
-    localDamper(): BABYLON.Vector3 {
-        const model: BABYLON.Mesh = this._dynamicObject.physicsModel;
-        const impostor: BABYLON.PhysicsImpostor = model.physicsImpostor;
-        const velocity = impostor.getLinearVelocity();
-        const localVelocity = new BABYLON.Vector3(projectVector(velocity, model.right).length(), 0.0, projectVector(velocity, model.forward).length());
-        const damper = new BABYLON.Vector3(0.0, 0.0, 0.0);
-        const mass = this._dynamicObject.manifest.mass || 1000;
-
-        // Damp speed
-        damper.z -= localVelocity.x;
-        damper.z -= localVelocity.x;
-
-        let dampScale = 1.0 * mass;
-
-        if (this.watchedKeyCodes.Space) {
-            dampScale *= 5.0;
-        }
-
-        return damper.scale(dampScale);
+    get physicsImpostor(): BABYLON.PhysicsImpostor {
+        const model = this._dynamicObject.physicsModel;
+        return model.physicsImpostor;
     }
-
 
     update({ deltaTime }) {
         this.updateControl(deltaTime);
-        //this.updateDamping(deltaTime);
-        //this.updateVelocityDirection(deltaTime);
         this.updatePropellers();
     }
 }
