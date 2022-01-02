@@ -5,10 +5,49 @@ import DynamicWorld from './DynamicWorld/DynamicWorld';
 import FrameUpdater from './FrameUpdater';
 import ActivePlayer from './DynamicWorld/ActivePlayer';
 import Hermes from './hermes/Hermes';
+import DynamicObject from './DynamicWorld/DynamicObject';
 
 // import * as CANNON from 'cannon';
 //
 // window.CANNON = CANNON;
+
+class CameraSmoother {
+    private smoothLength: number = 10;
+    private pastTargetPositions: BABYLON.Vector3[] = [];
+    private pastTargetRotations: BABYLON.Quaternion[] = [];
+
+    addTargetRotation(x: BABYLON.Quaternion) {
+        this.pastTargetRotations.push(x);
+        if (this.pastTargetRotations.length > this.smoothLength) {
+            this.pastTargetRotations.splice(0,1);
+        }
+    }
+
+    addTargetPosition(x: BABYLON.Vector3) {
+        this.pastTargetPositions.push(x);
+        if (this.pastTargetPositions.length > this.smoothLength) {
+            this.pastTargetPositions.splice(0,1);
+        }
+    }
+
+    getTargetRotation() {
+        return this.pastTargetRotations.reduce((acc, current) => {
+            if (acc == null) {
+                return current;
+            }
+            return acc.add(current);
+        }, null).scale(1.0 / this.pastTargetRotations.length);
+    }
+
+    getTargetPosition() {
+        return this.pastTargetPositions.reduce((acc, current) => {
+            if (acc == null) {
+                return current;
+            }
+            return acc.add(current);
+        }, null).scale(1.0 / this.pastTargetPositions.length);
+    }
+}
 
 export default class OSDApp {
     canvas : HTMLCanvasElement;
@@ -20,6 +59,7 @@ export default class OSDApp {
     dynamicWorld: DynamicWorld;
     hermes: Hermes;
     player: ActivePlayer = null;
+    cameraSmoother = new CameraSmoother();
 
     constructor() {
         window['_osdapp'] = this;
@@ -71,34 +111,52 @@ export default class OSDApp {
         this.cameraCurrent = new BABYLON.Mesh('cameraCurrent', this.scene);
         this.camera = new BABYLON.UniversalCamera('camera', new BABYLON.Vector3(0, 0, 0), this.scene);
 
-        this.cameraGoal.position.z += 30;
-        this.cameraGoal.rotation.y -= Math.PI;
-
+        this.camera.rotation.y = -Math.PI;
         this.camera.parent = this.cameraCurrent;
 
         this.updateCamera(0.0);
     }
 
-    updateCamera(deltaTime) {
-        const yOffset = this.player?.vehicle?.dynamicObject.manifest.cameraYOffset || 4;
-        this.cameraGoal.position.y = yOffset;
+    smoothCamera(deltaTime: number, target: DynamicObject, offset: BABYLON.Vector3) {
+        const quaternion = target.physicsModel.absoluteRotationQuaternion;
 
-        const targetPosition = this.cameraGoal.getAbsolutePosition();
+        const playerPosition = target.physicsModel.getAbsolutePosition();
+        offset.rotateByQuaternionAroundPointToRef(quaternion, new BABYLON.Vector3(0.0,0.0,0.0), offset);
+
+        let targetPosition = playerPosition.add(offset);
         const currentPosition = this.cameraCurrent.getAbsolutePosition();
-        const currentRotation = this.cameraCurrent.absoluteRotationQuaternion;
-        const targetRotation = this.cameraGoal.absoluteRotationQuaternion;
+        let targetRotation = target.physicsModel.absoluteRotationQuaternion;
 
-        let factor = 1.0 - Math.min(Math.max(deltaTime * 0.03, 0.0), 1.0);
-        const rotationMultiplier =  this.player?.isInVehicle? 0.18 :  0.5;
+        this.cameraSmoother.addTargetPosition(targetPosition);
+        this.cameraSmoother.addTargetRotation(targetRotation);
+        targetPosition = this.cameraSmoother.getTargetPosition();
+        targetRotation = this.cameraSmoother.getTargetRotation();
+
+        const factor = 0.1 * deltaTime;
+        const rotationMultiplier = 0.1;
         let rotationFactor =  rotationMultiplier * factor;
 
-        if (this.player?.isInVehicle) {
-            factor *= Math.pow(Math.min(this.player.vehicle.physicsImpostor.getLinearVelocity().length(), 30.0) / 30.0, 8.0);
-        }
-
         this.cameraCurrent.position =
-            targetPosition.scale(1.0 - factor).add(currentPosition.scale(factor));
+            targetPosition.scale(factor).add(currentPosition.scale(1.0 - factor));
         this.cameraCurrent.rotationQuaternion = BABYLON.Quaternion.Slerp(this.cameraCurrent.absoluteRotationQuaternion, targetRotation, rotationFactor);
+
+    }
+
+    updateCamera(deltaTime: number) {
+        if (!this.player) {
+            return;
+        }
+        let target: DynamicObject, yOffset: number, offset: BABYLON.Vector3;
+        if (this.player?.isInVehicle) {
+            target = this.player.vehicle.dynamicObject;
+            yOffset = target.manifest.cameraYOffset || 4;
+            offset = new BABYLON.Vector3(0.0, yOffset,  20.0);
+        } else {
+            target = this.player.dynamicObject;
+            yOffset = target.manifest.cameraYOffset || 4;
+            offset = new BABYLON.Vector3(0.0, yOffset,  14.0);
+        }
+        this.smoothCamera(deltaTime, target, offset);
     }
 
     createScene() {
@@ -117,6 +175,9 @@ export default class OSDApp {
         this.scene.getPhysicsEngine().setGravity(new BABYLON.Vector3(0,-60,0));
     }
 
+    get gravity(): BABYLON.Vector3 {
+        return this.scene.getPhysicsEngine().gravity;
+    }
 
     async createPhysics() {
         let gravityVector = new BABYLON.Vector3(0, 0, 0);

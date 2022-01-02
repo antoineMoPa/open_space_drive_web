@@ -15,7 +15,7 @@ export default class ActivePlayer extends Player {
 
     set model(model) {
         this._model = model;
-        this.app.cameraGoal.parent = this._model;
+        //this.app.cameraGoal.parent = this._model;
     }
 
     get model() {
@@ -128,6 +128,8 @@ export default class ActivePlayer extends Player {
 
         impostor.wakeUp();
 
+
+        //this._model.moveWithCollisions(localToGlobal(localForce).scale(0.0001));
         impostor.applyForce(
             localToGlobal(localForce).add(this.damper()), offset);
         impostor.setAngularVelocity(angularVelocity.add(localToGlobal(localAngularVelocityOffset)));

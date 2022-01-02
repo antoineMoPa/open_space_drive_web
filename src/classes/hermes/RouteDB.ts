@@ -1,8 +1,12 @@
 import * as BABYLON from 'babylonjs';
 import Hermes from './Hermes';
+import RouteUI from './RouteUI';
 import CreateShaderMaterial from '../../utils/CreateShaderMaterial'
 
-export default class Routes {
+/**
+ * RoutesDB: the route database
+ */
+export default class RouteDB {
     protected hermes: Hermes = null;
     private customMeshes: BABYLON.Mesh[] = [];
     private lastDrawnRouteId = 0;
@@ -107,7 +111,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
         const getRoadProfile = ({p, up, right}) => {
             let shapes = [];
             const road_width = 60;
-            const road_height = Routes.ROAD_WIDTH;
+            const road_height = RouteDB.ROAD_WIDTH;
             const fence_width = 2.0;
             const fence_height = 5.0;
 

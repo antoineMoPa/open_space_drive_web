@@ -4,7 +4,7 @@ import OSDApp from '../OSDApp';
 import FrameUpdater from '../FrameUpdater';
 import CreateShaderMaterial from '../../utils/CreateShaderMaterial';
 import DynamicObject from './DynamicObject';
-import Routes from '../hermes/Routes';
+import RouteDB from '../hermes/RouteDB';
 
 function projectVector(A: BABYLON.Vector3, B: BABYLON.Vector3) {
     return B.scale(BABYLON.Vector3.Dot(A, B) / Math.pow(B.length(), 2));
@@ -309,7 +309,7 @@ export default class Vehicle {
 
         if (this.hasGravity) {
             const position = model.getAbsolutePosition();
-            const nearestRoadPoint = this.app.hermes.routes.getNearestRoadPoint(position);
+            const nearestRoadPoint = this.app.hermes.routeDb.getNearestRoadPoint(position);
 
             // Build a force that will make the vehicle stay a certain distance
             // form the road vertically
@@ -334,7 +334,7 @@ export default class Vehicle {
 
                 const roadForward = nearestRoadPoint.forward.normalize(1);
                 const roadRight = roadForward.cross(roadUp);
-                const roadWidth = Routes.ROAD_WIDTH;
+                const roadWidth = RouteDB.ROAD_WIDTH;
 
                 // If under road or on the side of road, cancel impact
                 if (BABYLON.Vector3.Dot(position.subtract(roadPoint), roadUp) < 0.0 ||
@@ -344,9 +344,11 @@ export default class Vehicle {
                     aboveRoad = true;
                 }
 
+                // Align car up vector perpendicularly to road plane
+                const cross = roadUp.cross(this._dynamicObject.physicsModel.up);
+
                 angularVelocity.addInPlace(
-                    roadUp.cross(this._dynamicObject.physicsModel.up)
-                        .scale(-0.1 * deltaTime)
+                    cross.scale(-0.9 * deltaTime).scale(cross.length())
                 );
             }
         }
@@ -358,6 +360,11 @@ export default class Vehicle {
         if (affectedByGravity) {
             // Car force and damping cannot go against gravity if not over road
             force.multiplyInPlace(new BABYLON.Vector3(1.0, 0.0, 1.0));
+        }
+
+        if (aboveRoad) {
+            // Counter system-wide gravity
+            force.subtractInPlace(this.app.gravity.scale(mass).scale(2));
         }
 
         impostor.applyForce(

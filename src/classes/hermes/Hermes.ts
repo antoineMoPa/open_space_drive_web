@@ -1,5 +1,6 @@
 import DB from '../db';
-import Routes from './Routes';
+import RouteDB from './RouteDB';
+import RouteUI from './RouteUI';
 import OSDApp from '../OSDApp';
 
 /**
@@ -7,7 +8,9 @@ import OSDApp from '../OSDApp';
  */
 export default class Hermes {
     db: any = null;
-    routes: Routes = null;
+    public routeDb: RouteDB = null;
+    public routeUI: RouteUI = null;
+
     app: OSDApp = null;
 
     constructor(app: OSDApp) {
@@ -26,6 +29,7 @@ export default class Hermes {
 
     async init() {
         this.db = await DB.db();
-        this.routes = new Routes(this);
+        this.routeDb = new RouteDB(this);
+        this.routeUI = new RouteUI(this);
     }
 }

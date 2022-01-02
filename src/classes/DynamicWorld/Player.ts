@@ -48,7 +48,7 @@ export default class Player {
                 this._dynamicObject.boxModel.physicsImpostor.dispose();
                 this._dynamicObject.boxModel.position.scaleInPlace(0);
                 this._dynamicObject.boxModel.position.y -= 0.5;
-                this.app.cameraGoal.parent = vehicle.dynamicObject.physicsModel;
+                //this.app.cameraGoal.parent = vehicle.dynamicObject.physicsModel;
                 this._dynamicObject.model.isVisible = false;
                 vehicle.playerEnter();
             }
@@ -63,7 +63,7 @@ export default class Player {
         this._dynamicObject.boxModel.position = this.vehicle.dynamicObject.physicsModel.position.clone();
         this._dynamicObject.boxModel.position.addInPlace(new BABYLON.Vector3(1,0,0));
         this._dynamicObject.model.isVisible = true;
-        this.app.cameraGoal.parent = this._dynamicObject.boxModel;
+        //this.app.cameraGoal.parent = this._dynamicObject.boxModel;
         this.enablePhysics();
         this.vehicle.playerExit();
         this.vehicle = null;

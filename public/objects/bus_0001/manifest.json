@@ -4,6 +4,6 @@
     "hasCollisions": true,
     "isVehicle": true,
     "mass": 8000,
-    "acceleration": 3.0,
-    "rotationAcceleration": 0.4
+    "acceleration": 4.5,
+    "rotationAcceleration": 0.6
 }
