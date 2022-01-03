@@ -16,8 +16,8 @@ export default class DynamicWorld {
 
         this.buildGround();
         this.buildVehicles();
-        //this.buildTempBuildings();
-        //this.buildWorldSphere();
+        this.buildTempBuildings();
+        this.buildWorldSphere();
         this.buildPlayers();
     }
 

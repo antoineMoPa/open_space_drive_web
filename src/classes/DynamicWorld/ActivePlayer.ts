@@ -62,9 +62,14 @@ export default class ActivePlayer extends Player {
     }
 
     jump() {
+        if (this.model.position.y > 2) {
+            // this is some very dumb floor detection
+            return;
+        }
+
         const velocity = this.model.physicsImpostor.getLinearVelocity();
         const globalVelocityOffset = new BABYLON.Vector3(0,0,0);
-        globalVelocityOffset.y += 60;
+        globalVelocityOffset.y += 20;
         this.model.physicsImpostor.setLinearVelocity(velocity.add(globalVelocityOffset));
         const rotation = this.model.rotationQuaternion.toEulerAngles();
         rotation.x = 0;

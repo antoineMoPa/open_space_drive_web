@@ -362,11 +362,6 @@ export default class Vehicle {
             force.multiplyInPlace(new BABYLON.Vector3(1.0, 0.0, 1.0));
         }
 
-        if (aboveRoad) {
-            // Counter system-wide gravity
-            force.subtractInPlace(this.app.gravity.scale(mass).scale(2));
-        }
-
         impostor.applyForce(
             force.add(localGravity).add(this.damper()),
             model.getAbsolutePosition()
