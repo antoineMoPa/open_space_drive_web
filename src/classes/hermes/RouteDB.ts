@@ -194,11 +194,11 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
 
                     const face = [
                         j,
-                        j + 1 + l,
                         j + l,
+                        j + 1 + l,
                         j,
-                        j + 1,
-                        j + 1 + l
+                        j + 1 + l,
+                        j + 1
                     ];
 
                     shapeFaceIndices.push(...face.map(i => i + previousOffset));
