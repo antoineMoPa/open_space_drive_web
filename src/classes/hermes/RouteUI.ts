@@ -1,7 +1,7 @@
 import * as BABYLON from 'babylonjs';
 import Hermes from "./Hermes";
 import FrameUpdater from '../FrameUpdater';
-import Vehicle from '../DynamicWorld/Vehicle';
+import RoadRig from '../DynamicWorld/RoadRig';
 
 const controlPointsPerAxis = 5;
 const gridSize = 50;
@@ -10,7 +10,7 @@ const epsilon = 1; // tolerance for selection
 export default class RouteUI {
     protected hermes: Hermes = null;
     private frameUpdaterID: string;
-    private vehicle: Vehicle = null;
+    private vehicle: RoadRig = null;
     private uiSpheres: BABYLON.Mesh[] = [];
     private selection: BABYLON.Vector3[] = [];
     private normalMaterial: BABYLON.StandardMaterial;
@@ -87,25 +87,32 @@ export default class RouteUI {
         this.selection.push(sphere.position.clone());
 
         if (this.selection.length == 2) {
-
+            const forward = this.selection[1].subtract(this.selection[0]).normalize();
+            const up = new BABYLON.Vector3(0, 1, 0);
             const point1ID = this.hermes.routeDb.addPoint({
                 point: this.selection[0],
-                up: new BABYLON.Vector3(0, 1, 0),
-                forward: this.selection[1].subtract(this.selection[0]).normalize()
+                up,
+                forward
             });
 
             const point2ID = this.hermes.routeDb.addPoint({
                 point: this.selection[1],
-                up: new BABYLON.Vector3(0, 1, 0),
-                forward: this.selection[1].subtract(this.selection[0]).normalize()
+                up,
+                forward
             });
 
             this.hermes.routeDb.addSegment({
                 point1ID,
                 point2ID,
                 has_left_wall: true,
-                has_right_wall: true
+                has_right_wall: true,
+                is_noodle: true,
             });
+
+            this.vehicle.setTarget(
+                this.selection[1].add(forward.scale(-30)).add(up.scale(5)),
+                forward
+            );
 
             this.selection = [this.selection[1]];
         }

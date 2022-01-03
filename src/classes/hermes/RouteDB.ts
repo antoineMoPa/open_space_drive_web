@@ -391,10 +391,14 @@ WHERE road_segment.id > ${this.lastDrawnRouteId}`);
         return results[0].values[0][0];
     }
 
-    addSegment({point1ID, point2ID, has_left_wall, has_right_wall}): void {
+    addSegment({
+        point1ID, point2ID, has_left_wall, has_right_wall,
+        is_noodle = false,
+        is_bidirectional = false
+    }): void {
         const db = this.hermes.db;
         db.exec(
-            `INSERT INTO road_segment (point_1, point_2, has_left_wall, has_right_wall) VALUES (${point1ID}, ${point2ID}, ${has_left_wall}, ${has_right_wall})`
+            `INSERT INTO road_segment (point_1, point_2, has_left_wall, has_right_wall, is_noodle, is_bidirectional) VALUES (${point1ID}, ${point2ID}, ${has_left_wall}, ${has_right_wall}, ${is_noodle}, ${is_bidirectional})`
         );
         this.update();
     }

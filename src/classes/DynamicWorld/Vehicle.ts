@@ -132,6 +132,10 @@ export default class Vehicle {
         }
     }
 
+    get model(): BABYLON.Mesh {
+        return this._dynamicObject.physicsModel;
+    }
+
     get dynamicObject(): DynamicObject {
         return this._dynamicObject;
     }
@@ -155,7 +159,7 @@ export default class Vehicle {
 
 
     updateVelocityDirection(deltaTime: number) {
-        const model = this._dynamicObject.physicsModel;
+        const model = this.model;
         const velocity = model.physicsImpostor.getLinearVelocity();
         const direction = model.forward;
         const projectedVelocity = projectVector(velocity, direction);
