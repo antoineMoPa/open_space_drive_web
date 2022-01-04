@@ -106,8 +106,8 @@ export default class RouteUI {
                 point2ID,
                 has_left_wall: true,
                 has_right_wall: true,
-                is_noodle: true,
             });
+            this.showPossibilities({point: this.selection[1], forward, up});
 
             this.vehicle.setTarget(
                 this.selection[1].add(forward.scale(-30)).add(up.scale(5)),
@@ -116,6 +116,59 @@ export default class RouteUI {
 
             this.selection = [this.selection[1]];
         }
+    }
+
+    showPossibilities({ point, forward, up }) {
+        this.showForwardPossibility({ point, forward, up });
+        this.showCurvePossibility({ point, forward, up });
+    }
+
+    showForwardPossibility({ point, forward, up }) {
+        const point1ID = this.hermes.routeDb.addPoint({
+            point,
+            up,
+            forward,
+            is_ghost: true
+        });
+
+        const point2ID = this.hermes.routeDb.addPoint({
+            point: point.add(forward.scale(gridSize)),
+            up,
+            forward,
+            is_ghost: true
+        });
+
+        this.hermes.routeDb.addSegment({
+            point1ID,
+            point2ID,
+            has_left_wall: true,
+            has_right_wall: true,
+            is_ghost: true
+        });
+    }
+
+    showCurvePossibility({ point, forward, up }) {
+        const point1ID = this.hermes.routeDb.addPoint({
+            point,
+            up,
+            forward,
+            is_ghost: true
+        });
+
+        const point2ID = this.hermes.routeDb.addPoint({
+            point: point.add(forward.scale(gridSize)),
+            up,
+            forward,
+            is_ghost: true
+        });
+
+        this.hermes.routeDb.addSegment({
+            point1ID,
+            point2ID,
+            has_left_wall: true,
+            has_right_wall: true,
+            is_ghost: true
+        });
     }
 
     update() {

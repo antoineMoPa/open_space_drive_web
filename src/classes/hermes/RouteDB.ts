@@ -12,6 +12,8 @@ export default class RouteDB {
     private lastDrawnRouteId = 0;
     private roadMaterial = null;
     private wallMaterial = null;
+    private ghostRoadMaterial = null;
+    private ghostWallMaterial = null;
     public static ROAD_WIDTH = 8;
 
     constructor(hermes: Hermes) {
@@ -78,15 +80,21 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
     async buildRoadMaterial() {
         const scene = this.hermes.app.scene;
         this.roadMaterial = await CreateShaderMaterial('road', 'public/shaders/hermes/road', scene);
+        this.ghostRoadMaterial = await CreateShaderMaterial('ghostRoad', 'public/shaders/hermes/ghostRoad', scene);
+
+        this.ghostRoadMaterial.needAlphaBlending = () => true;
     }
 
     async buildWallMaterial() {
         const scene = this.hermes.app.scene;
         this.wallMaterial = await CreateShaderMaterial('wall', 'public/shaders/hermes/wall', scene);
+        this.ghostWallMaterial = await CreateShaderMaterial('ghostWall', 'public/shaders/hermes/ghostWall', scene);
+
+        this.ghostWallMaterial.needAlphaBlending = () => true;
     }
 
 
-    buildRoadSegment(point1: any, point2: any, { id, has_left_wall, has_right_wall }): BABYLON.Mesh[] {
+    buildRoadSegment(point1: any, point2: any, { id, has_left_wall, has_right_wall, is_ghost }): BABYLON.Mesh[] {
         const {up, p, forward, right} = (point1);
         const p2Up = point2.up;
         const p2Forward = point2.forward;
@@ -228,8 +236,11 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
                         }
                     }, scene);
 
+                const roadMaterial = is_ghost ? this.ghostRoadMaterial : this.roadMaterial;
+                const wallMaterial = is_ghost ? this.ghostWallMaterial : this.wallMaterial;
                 // Hack: I know that mesh 1 is the road
-                mesh.material = index == 0 ? this.roadMaterial : this.wallMaterial;
+                mesh.material = index == 0 ? roadMaterial : wallMaterial;
+
                 meshes.push(mesh);
             }
         });
@@ -252,7 +263,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
         const db = this.hermes.db;
         const start = this.lastDrawnRouteId;
 
-        let roadResults = db.exec(`SELECT id, point_1, point_2 FROM road_segment WHERE id > ${start - 1} ORDER BY id`);
+        let roadResults = db.exec(`SELECT id, point_1, point_2, is_ghost FROM road_segment WHERE id > ${start - 1} ORDER BY id`);
 
         if (!roadResults[0]) {
             return [];
@@ -264,7 +275,7 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
     getPoints() {
         const db = this.hermes.db;
 
-        let pointsResults = db.exec(`SELECT id,x,y,z,upX,upY,upZ,forwardX,forwardY,forwardZ FROM road_point ORDER BY id`);
+        let pointsResults = db.exec(`SELECT id,x,y,z,upX,upY,upZ,forwardX,forwardY,forwardZ,is_ghost FROM road_point ORDER BY id`);
 
         if (!pointsResults[0]) {
             return [];
@@ -299,7 +310,8 @@ SELECT
     point_2.forwardY as forward2Y,
     point_2.forwardZ as forward2Z,
     road_segment.has_left_wall as has_left_wall,
-    road_segment.has_right_wall as has_right_wall
+    road_segment.has_right_wall as has_right_wall,
+    road_segment.is_ghost as is_ghost
 FROM
     road_segment
 INNER JOIN
@@ -343,6 +355,7 @@ WHERE road_segment.id > ${this.lastDrawnRouteId}`);
                 forward2Z,
                 has_left_wall,
                 has_right_wall,
+                is_ghost
             ] = row;
 
             const p1 = new BABYLON.Vector3(x1, y1, z1);
@@ -357,7 +370,7 @@ WHERE road_segment.id > ${this.lastDrawnRouteId}`);
             const meshes = this.buildRoadSegment(
                 {up: up1, p: p1, forward: forward1, right: right1},
                 {up: up2, p: p2, forward: forward2, right: right2},
-                {id, has_left_wall, has_right_wall}
+                {id, has_left_wall, has_right_wall, is_ghost}
             );
             this.customMeshes.push(...meshes);
         });
@@ -367,7 +380,7 @@ WHERE road_segment.id > ${this.lastDrawnRouteId}`);
      * Adds a point to road_point table.
      * returns the added point id.
      */
-    addPoint({point, up, forward}): number {
+    addPoint({point, up, forward, is_ghost = false}): number {
         const db = this.hermes.db;
         const fieldMap = {
             'x': point.x,
@@ -379,6 +392,7 @@ WHERE road_segment.id > ${this.lastDrawnRouteId}`);
             'forwardX': forward.x,
             'forwardY': forward.y,
             'forwardZ': forward.z,
+            'is_ghost': is_ghost
         };
         const fields = Object.keys(fieldMap);
         const values = Object.keys(fieldMap).map(key => fieldMap[key]);
@@ -393,12 +407,12 @@ WHERE road_segment.id > ${this.lastDrawnRouteId}`);
 
     addSegment({
         point1ID, point2ID, has_left_wall, has_right_wall,
-        is_noodle = false,
-        is_bidirectional = false
+        is_bidirectional = false,
+        is_ghost = false,
     }): void {
         const db = this.hermes.db;
         db.exec(
-            `INSERT INTO road_segment (point_1, point_2, has_left_wall, has_right_wall, is_noodle, is_bidirectional) VALUES (${point1ID}, ${point2ID}, ${has_left_wall}, ${has_right_wall}, ${is_noodle}, ${is_bidirectional})`
+            `INSERT INTO road_segment (point_1, point_2, has_left_wall, has_right_wall, is_bidirectional, is_ghost) VALUES (${point1ID}, ${point2ID}, ${has_left_wall}, ${has_right_wall}, ${is_bidirectional}, ${is_ghost})`
         );
         this.update();
     }
