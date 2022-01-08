@@ -63,6 +63,24 @@ export default class RouteUI {
                 )
             );
 
+            sphere.actionManager.registerAction(
+                new BABYLON.ExecuteCodeAction(
+                    BABYLON.ActionManager.OnPointerOverTrigger,
+                    () => {
+                        this.sphereHover(sphere);
+                    }
+                )
+            );
+
+            sphere.actionManager.registerAction(
+                new BABYLON.ExecuteCodeAction(
+                    BABYLON.ActionManager.OnPointerOutTrigger,
+                    () => {
+                        this.sphereBlur();
+                    }
+                )
+            );
+
             this.uiSpheres.push(sphere);
         }
 
@@ -116,6 +134,27 @@ export default class RouteUI {
 
             this.selection = [this.selection[1]];
         }
+    }
+
+    sphereHover(sphere: BABYLON.Mesh) {
+        if (this.isPositionSelected(sphere.position)) {
+            return;
+        }
+
+        if (this.selection.length === 0) {
+            return;
+        }
+
+        const point = this.selection[this.selection.length - 1];
+        const next = sphere.position;
+        const forward = next.subtract(point).normalize();
+        const up = new BABYLON.Vector3(0,1,0); // Testing only
+
+        this.showPossibilities({ point, forward, up });
+    }
+
+    sphereBlur() {
+        this.hermes.routeDb.clearGhosts();
     }
 
     showPossibilities({ point, forward, up }) {

@@ -12,6 +12,7 @@ export default class RouteDB {
     private lastDrawnRouteId = 0;
     private roadMaterial = null;
     private wallMaterial = null;
+    private ghosts: BABYLON.Mesh[] = [];
     private ghostRoadMaterial = null;
     private ghostWallMaterial = null;
     public static ROAD_WIDTH = 8;
@@ -94,7 +95,11 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
     }
 
 
-    buildRoadSegment(point1: any, point2: any, { id, has_left_wall, has_right_wall, is_ghost }): BABYLON.Mesh[] {
+    buildRoadSegment(
+        point1: any,
+        point2: any,
+        { id, has_left_wall, has_right_wall, is_ghost }
+    ): BABYLON.Mesh[] {
         const {up, p, forward, right} = (point1);
         const p2Up = point2.up;
         const p2Forward = point2.forward;
@@ -242,12 +247,23 @@ road_point.z BETWEEN ${zMin} AND ${zMax}
                 mesh.material = index == 0 ? roadMaterial : wallMaterial;
 
                 meshes.push(mesh);
+
+                is_ghost && this.ghosts.push(mesh);
             }
         });
 
         this.lastDrawnRouteId = id;
 
         return meshes;
+    }
+
+    clearGhosts() {
+        const db = this.hermes.db;
+        db.exec(['road_segment', 'road_point'].map(
+            table => `DELETE FROM ${table} WHERE is_ghost = 1`
+        ).join(';'));
+        this.ghosts.forEach(ghost => ghost.dispose());
+        this.ghosts = [];
     }
 
     clear() {
